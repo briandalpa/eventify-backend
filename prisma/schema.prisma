@@ -93,6 +93,7 @@ model User {
   phone        String?
   bio          String?
   referralCode String   @unique @map("referral_code")
+  referredBy   String?  @map("referred_by")
   points       Int      @default(0)
   createdAt    DateTime @default(now()) @map("created_at")
   updatedAt    DateTime @updatedAt @map("updated_at")
@@ -101,10 +102,14 @@ model User {
   transactions Transaction[]
   reviews      Review[]
   userPoints   UserPoint[]
+  referrer     User?    @relation("Referrals", fields: [referredBy], references: [referralCode])
+  referrals    User[]   @relation("Referrals")
+  coupons      Coupon[]
   
   // Organizer reference (if user is an organizer, they'll have events)
   events       Event[]
 
+  @@index([referredBy])
   @@index([email])
   @@index([referralCode])
   @@index([role])
@@ -221,12 +226,16 @@ model Coupon {
   eventId      String?  @map("event_id")
   createdAt    DateTime @default(now()) @map("created_at")
   updatedAt    DateTime @updatedAt @map("updated_at")
+  userId       String?  @map("user_id")  
+  
 
   // Relation
   event           Event?       @relation(fields: [eventId], references: [id], onDelete: Cascade)
-
+  user         User?    @relation(fields: [userId], references: [id])
   transactions    Transaction[]
 
+
+  @@index([userId])
   @@index([code])
   @@index([eventId])
   @@map("coupons")
