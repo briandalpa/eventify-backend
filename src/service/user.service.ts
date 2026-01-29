@@ -38,11 +38,11 @@ export class UserService {
     if (request.referralCode) {
       referrer = await prisma.user.findUnique({
         where: { referralCode: request.referralCode },
-        select: { id: true, referralCode: true }, // Only select needed fields
+        select: { id: true, referralCode: true },
       });
 
       if (!referrer) {
-        throw new ResponseError(400, 'Invalid referral code'); // ✅ Use ResponseError for consistency
+        throw new ResponseError(400, 'Invalid referral code');
       }
     }
     // Generate new user's unique referral code
