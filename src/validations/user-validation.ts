@@ -1,6 +1,10 @@
 import { z, ZodType } from 'zod';
 import { UserRole } from '../generated/prisma/enums';
-import type { CreateUserRequest, LoginUserRequest } from '../model/user-model';
+import type {
+  CreateUserRequest,
+  LoginUserRequest,
+  UpdateUserRequest,
+} from '../model/user-model';
 
 export class UserValidation {
   static readonly REGISTER: ZodType<CreateUserRequest> = z.object({
@@ -14,5 +18,10 @@ export class UserValidation {
   static readonly LOGIN: ZodType<LoginUserRequest> = z.object({
     email: z.email(),
     password: z.string().min(8).max(100),
+  });
+
+  static readonly UPDATE: ZodType<UpdateUserRequest> = z.object({
+    name: z.string().min(3).max(100).optional(),
+    password: z.string().min(8).max(100).optional(),
   });
 }
