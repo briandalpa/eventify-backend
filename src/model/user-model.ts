@@ -23,6 +23,11 @@ export type LoginUserRequest = {
   password: string;
 };
 
+export type UpdateUserRequest = {
+  name?: string;
+  password?: string;
+};
+
 export interface UserProfile extends UserResponse {
   avatarUrl?: string;
   phone?: string;

@@ -12,10 +12,12 @@ import {
   type CreateUserRequest,
   type UserResponse,
   LoginUserRequest,
+  UpdateUserRequest,
 } from '../model/user-model';
 import bcrypt from 'bcrypt';
 import { prisma } from '../application/database';
 import { v4 as uuidv4 } from 'uuid';
+import { User } from '../generated/prisma/client';
 
 export class UserService {
   // Register User
@@ -117,5 +119,38 @@ export class UserService {
     const response = toUserResponse(user);
     response.token = user.token!;
     return response;
+  }
+
+  // Get user
+  static async get(user: User): Promise<UserResponse> {
+    return toUserResponse(user);
+  }
+
+  // Update user
+  static async update(
+    user: User,
+    request: UpdateUserRequest,
+  ): Promise<UserResponse> {
+    const updateRequest = Validation.validate<UpdateUserRequest>(
+      UserValidation.UPDATE,
+      request,
+    );
+
+    if (updateRequest.name) {
+      user.name = updateRequest.name;
+    }
+
+    if (updateRequest.password) {
+      user.password = await bcrypt.hash(updateRequest.password, 10);
+    }
+
+    const result = await prisma.user.update({
+      where: {
+        email: user.email,
+      },
+      data: user,
+    });
+
+    return toUserResponse(result);
   }
 }

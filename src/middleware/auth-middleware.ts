@@ -1,0 +1,30 @@
+// Middleware for request -> before controller
+
+import { Response, NextFunction } from 'express';
+import { prisma } from '../application/database';
+import { UserRequest } from '../types/user-request';
+
+export const authMiddleware = async (
+  req: UserRequest,
+  res: Response,
+  next: NextFunction,
+) => {
+  const token = req.get('X-API-TOKEN');
+
+  if (token) {
+    // Get user data
+    const user = await prisma.user.findFirst({
+      where: {
+        token: token,
+      },
+    });
+
+    if (user) {
+      req.user = user;
+      next();
+      return;
+    }
+  }
+
+  res.status(401).json({ errors: 'Unauthorized' }).end();
+};
