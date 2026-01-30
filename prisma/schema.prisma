@@ -88,6 +88,7 @@ model User {
   name         String
   email        String   @unique
   password     String
+  token        String?  
   role         UserRole @default(CUSTOMER)
   avatarUrl    String?  @map("avatar_url")
   phone        String?

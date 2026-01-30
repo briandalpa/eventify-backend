@@ -18,6 +18,11 @@ export type CreateUserRequest = {
   referralCode?: string;
 };
 
+export type LoginUserRequest = {
+  email: string;
+  password: string;
+};
+
 export interface UserProfile extends UserResponse {
   avatarUrl?: string;
   phone?: string;
