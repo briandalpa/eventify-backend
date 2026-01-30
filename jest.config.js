@@ -1,11 +1,12 @@
 module.exports = {
   preset: 'ts-jest',
   testEnvironment: 'node',
+  transformIgnorePatterns: ['node_modules/(?!(uuid)/)'],
   roots: ['<rootDir>/test', '<rootDir>/src'],
   testMatch: ['**/__tests__/**/*.ts', '**/?(*.)+(spec|test).ts'],
   moduleFileExtensions: ['ts', 'js', 'json'],
   collectCoverageFrom: ['src/**/*.ts', '!src/**/*.d.ts', '!src/generated/**'],
-  setupFilesAfterEnv: ['<rootDir>/test/setup.ts'],
+  setupFilesAfterEnv: ['<rootDir>/test/user.test.ts'],
   transform: {
     '^.+\\.tsx?$': [
       'ts-jest',
@@ -18,6 +19,6 @@ module.exports = {
     ],
   },
   moduleNameMapper: {
-    'nanoid': '<rootDir>/test/__mocks__/nanoid.js',
+    nanoid: '<rootDir>/test/__mocks__/nanoid.js',
   },
 };

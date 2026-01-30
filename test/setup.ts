@@ -4,10 +4,10 @@ const prisma = {
     findUnique: jest.fn().mockResolvedValue(null),
     create: jest.fn().mockResolvedValue({
       id: '1',
-      name: 'Test User',
+      name: 'Test',
       email: 'test@example.com',
       password: 'hashed_password',
-      role: 'USER',
+      role: 'CUSTOMER',
       referralCode: 'ABC12345',
       referredBy: null,
       createdAt: new Date(),
