@@ -3,6 +3,7 @@ import { app } from '../src/application/app';
 import bcrypt from 'bcrypt';
 import { prisma } from '../src/application/database';
 import { v4 as uuidv4 } from 'uuid';
+import { logger } from '../src/application/logging';
 
 describe('Event Management API', () => {
   let organizerToken: string;
@@ -98,6 +99,7 @@ describe('Event Management API', () => {
         .set('X-API-TOKEN', organizerToken)
         .send(eventData);
 
+      logger.debug(response.body);
       expect(response.status).toBe(201);
       expect(response.body.data).toBeDefined();
       expect(response.body.data.title).toBe('Tech Conference 2026');
@@ -133,6 +135,7 @@ describe('Event Management API', () => {
         .set('X-API-TOKEN', customerToken)
         .send(eventData);
 
+      logger.debug(response.body);
       expect(response.status).toBe(403);
     });
 
@@ -160,7 +163,52 @@ describe('Event Management API', () => {
         .set('X-API-TOKEN', organizerToken)
         .send(eventData);
 
+      logger.debug(response.body);
       expect(response.status).toBe(400);
+    });
+  });
+
+  describe('PATCH /api/events/:id', () => {
+    it('should update own event as organizer', async () => {
+      const updateData = {
+        title: 'Updated Tech Conference',
+        description: 'Updated description for tech conference',
+      };
+
+      const response = await supertest(app)
+        .patch(`/api/events/${eventId}`)
+        .set('X-API-TOKEN', organizerToken)
+        .send(updateData);
+
+      logger.debug(response.body);
+      expect(response.status).toBe(200);
+      expect(response.body.data.title).toBe('Updated Tech Conference');
+    });
+
+    it('should reject update for other organizer event', async () => {
+      // Create another organizer
+      const otherOrganizer = await prisma.user.create({
+        data: {
+          name: 'Other Organizer',
+          email: 'other-organizer@test.com',
+          password: await bcrypt.hash('password123', 10),
+          role: 'ORGANIZER',
+          referralCode: `REF-${uuidv4()}`,
+          token: 'other-organizer-token',
+        },
+      });
+
+      const response = await supertest(app)
+        .patch(`/api/events/${eventId}`)
+        .set('X-API-TOKEN', otherOrganizer.token!)
+        .send({ title: 'Hacked Title' });
+
+      logger.debug(response.body);
+      expect(response.status).toBe(403);
+
+      await prisma.user.delete({
+        where: { email: 'other-organizer@test.com' },
+      });
     });
   });
 });

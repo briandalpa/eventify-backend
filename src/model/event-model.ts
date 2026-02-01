@@ -34,6 +34,20 @@ export type CreateEventRequest = {
   ticketTiers: TicketTierRequest[];
 };
 
+export type UpdateEventRequest = {
+  title?: string;
+  description?: string;
+  shortDescription?: string;
+  coverImage?: string;
+  images?: string[];
+  categoryId?: string;
+  locationId?: string;
+  venue?: string;
+  date?: Date | string;
+  endDate?: Date | string;
+  isFree?: boolean;
+};
+
 export type EventResponse = {
   id: string;
   title: string;

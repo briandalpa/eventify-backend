@@ -4,6 +4,7 @@ import { EventStatus, User, UserRole } from '../generated/prisma/client';
 import {
   CreateEventRequest,
   EventResponse,
+  UpdateEventRequest,
   toEventResponse,
 } from '../model/event-model';
 import { EventValidation } from '../validations/event-validation';
@@ -88,5 +89,90 @@ export class EventService {
     });
 
     return toEventResponse(eventWithTiers!);
+  }
+
+  // Update event (ORGANIZER, own events only)
+  static async updateEvent(
+    user: User,
+    eventId: string,
+    request: UpdateEventRequest,
+  ): Promise<EventResponse> {
+    // Validate request
+    const updateRequest = Validation.validate<UpdateEventRequest>(
+      EventValidation.UPDATE,
+      request,
+    );
+
+    // Get event and verify ownership
+    const event = await prisma.event.findUnique({
+      where: { id: eventId },
+      include: { ticketTiers: true },
+    });
+
+    if (!event) {
+      throw new ResponseError(404, 'Event not found');
+    }
+
+    if (event.organizerId !== user.id) {
+      throw new ResponseError(403, 'You can only update your own events');
+    }
+
+    // Cannot update completed or cancelled events
+    if (
+      event.status === EventStatus.COMPLETED ||
+      event.status === EventStatus.CANCELLED
+    ) {
+      throw new ResponseError(409, `Cannot update ${event.status} events`);
+    }
+
+    // Verify category if provided
+    if (updateRequest.categoryId) {
+      const category = await prisma.category.findUnique({
+        where: { id: updateRequest.categoryId },
+      });
+      if (!category) {
+        throw new ResponseError(404, 'Category not found');
+      }
+    }
+
+    // Verify location if provided
+    if (updateRequest.locationId) {
+      const location = await prisma.location.findUnique({
+        where: { id: updateRequest.locationId },
+      });
+      if (!location) {
+        throw new ResponseError(404, 'Location not found');
+      }
+    }
+
+    // Update event
+    const updatedEvent = await prisma.event.update({
+      where: { id: eventId },
+      data: {
+        title: updateRequest.title || event.title,
+        description: updateRequest.description || event.description,
+        shortDescription:
+          updateRequest.shortDescription !== undefined
+            ? updateRequest.shortDescription
+            : event.shortDescription,
+        coverImage: updateRequest.coverImage || event.coverImage,
+        images: updateRequest.images || event.images,
+        categoryId: updateRequest.categoryId || event.categoryId,
+        locationId: updateRequest.locationId || event.locationId,
+        venue: updateRequest.venue || event.venue,
+        date: updateRequest.date || event.date,
+        endDate:
+          updateRequest.endDate !== undefined
+            ? updateRequest.endDate
+            : event.endDate,
+        isFree:
+          updateRequest.isFree !== undefined
+            ? updateRequest.isFree
+            : event.isFree,
+      },
+      include: { ticketTiers: true },
+    });
+
+    return toEventResponse(updatedEvent);
   }
 }

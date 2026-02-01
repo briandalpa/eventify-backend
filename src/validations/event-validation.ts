@@ -1,5 +1,9 @@
 import { z, ZodType } from 'zod';
-import { CreateEventRequest, TicketTierRequest } from '../model/event-model';
+import {
+  CreateEventRequest,
+  TicketTierRequest,
+  UpdateEventRequest,
+} from '../model/event-model';
 
 export class EventValidation {
   static readonly TICKET_TIER: ZodType<TicketTierRequest> = z.object({
@@ -53,4 +57,29 @@ export class EventValidation {
         path: ['ticketTiers'],
       },
     );
+
+  static readonly UPDATE: ZodType<UpdateEventRequest> = z.object({
+    title: z
+      .string()
+      .min(3, 'Title must be at least 3 characters')
+      .max(200)
+      .optional(),
+    description: z
+      .string()
+      .min(10, 'Description must be at least 10 characters')
+      .max(5000)
+      .optional(),
+    shortDescription: z.string().max(200).optional(),
+    coverImage: z.url().optional(),
+    images: z.array(z.url('Invalid cover URL')).optional(),
+    categoryId: z.string().min(1, 'Category is required').optional(),
+    locationId: z.string().min(1, 'Location is required').optional(),
+    venue: z.string().min(1, 'Venue is required').max(300).optional(),
+    date: z.coerce
+      .date()
+      .refine((d) => d > new Date(), 'Event date must be in the future')
+      .optional(),
+    endDate: z.coerce.date().optional(),
+    isFree: z.boolean().optional(),
+  });
 }
