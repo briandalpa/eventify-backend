@@ -211,4 +211,55 @@ describe('Event Management API', () => {
       });
     });
   });
+
+  describe('GET /api/events', () => {
+    it('should list events with pagination', async () => {
+      const response = await supertest(app).get('/api/events?page=1&limit=10');
+
+      logger.debug(response.body);
+      expect(response.status).toBe(200);
+      expect(response.body.data).toBeDefined();
+      expect(Array.isArray(response.body.data)).toBe(true);
+      expect(response.body.pagination).toBeDefined();
+    });
+
+    it('should filter events by category', async () => {
+      const response = await supertest(app).get(
+        `/api/events?category=${categoryId}`,
+      );
+
+      logger.debug(response.body);
+      expect(response.status).toBe(200);
+      expect(response.body.data.length).toBeGreaterThan(0);
+    });
+  });
+
+  describe('GET /api/events/search', () => {
+    it('should search events', async () => {
+      const response = await supertest(app).get('/api/events/search?q=Tech');
+
+      logger.debug(response.body);
+      expect(response.status).toBe(200);
+      expect(response.body.data).toBeDefined();
+    });
+
+    it('should reject search without query', async () => {
+      const response = await supertest(app).get('/api/events/search');
+
+      logger.debug(response.body);
+      expect(response.status).toBe(400);
+    });
+  });
+
+  describe('GET /api/organizer/events', () => {
+    it('should list organizer events', async () => {
+      const response = await supertest(app)
+        .get('/api/organizer/events')
+        .set('X-API-TOKEN', organizerToken);
+
+      logger.debug(response.body);
+      expect(response.status).toBe(200);
+      expect(Array.isArray(response.body.data)).toBe(true);
+    });
+  });
 });

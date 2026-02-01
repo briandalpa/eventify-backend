@@ -3,7 +3,9 @@ import { ResponseError } from '../error/response-error';
 import { EventStatus, User, UserRole } from '../generated/prisma/client';
 import {
   CreateEventRequest,
+  EventFilterRequest,
   EventResponse,
+  PaginatedEventResponse,
   UpdateEventRequest,
   toEventResponse,
 } from '../model/event-model';
@@ -174,5 +176,189 @@ export class EventService {
     });
 
     return toEventResponse(updatedEvent);
+  }
+
+  // Get event by ID (PUBLIC)
+  static async getEventById(eventId: string): Promise<EventResponse> {
+    const event = await prisma.event.findUnique({
+      where: { id: eventId },
+      include: { ticketTiers: true },
+    });
+
+    if (!event) {
+      throw new ResponseError(404, 'Event not found');
+    }
+
+    return toEventResponse(event);
+  }
+
+  // Get event by ID for organizer (shows all statuses for own events)
+  static async getEventByIdForOrganizer(
+    user: User,
+    eventId: string,
+  ): Promise<EventResponse> {
+    const event = await prisma.event.findUnique({
+      where: { id: eventId },
+      include: { ticketTiers: true },
+    });
+
+    if (!event) {
+      throw new ResponseError(404, 'Event not found');
+    }
+
+    // If not organizer of this event, only show published events
+    if (
+      event.organizerId !== user.id &&
+      event.status !== EventStatus.PUBLISHED
+    ) {
+      throw new ResponseError(404, 'Event not found');
+    }
+
+    return toEventResponse(event);
+  }
+
+  // List events (PUBLIC with filters)
+  static async listEvents(
+    filters: EventFilterRequest,
+  ): Promise<PaginatedEventResponse> {
+    const validateFilters = Validation.validate<EventFilterRequest>(
+      EventValidation.FILTER,
+      filters,
+    );
+
+    const page = validateFilters.page || 1;
+    const limit = validateFilters.limit || 10;
+    const skip = (page - 1) * limit;
+
+    // Create where clause
+    const where: any = {
+      status: EventStatus.PUBLISHED,
+    };
+
+    if (validateFilters.category) {
+      where.categoryId = validateFilters.category;
+    }
+
+    if (validateFilters.location) {
+      where.locationId = validateFilters.location;
+    }
+
+    if (validateFilters.isFree !== undefined) {
+      where.isFree = validateFilters.isFree;
+    }
+
+    if (validateFilters.dateFrom) {
+      where.date = { gte: validateFilters.dateFrom }; // gte -> greater than or equal
+    }
+
+    if (validateFilters.dateTo) {
+      where.date = {
+        ...where.date,
+        lte: validateFilters.dateTo, // lte -> less than or equal
+      };
+    }
+
+    if (validateFilters.search) {
+      where.OR = [
+        { title: { contains: validateFilters.search, mode: 'insensitive' } },
+        {
+          description: {
+            contains: validateFilters.search,
+            mode: 'insensitive',
+          },
+        },
+      ];
+    }
+
+    // Get events and total count
+    const [events, total] = await Promise.all([
+      prisma.event.findMany({
+        where,
+        include: { ticketTiers: true },
+        orderBy: { date: 'asc' },
+        skip,
+        take: limit,
+      }),
+      prisma.event.count({ where }),
+    ]);
+
+    return {
+      data: events.map((event) => toEventResponse(event)),
+      pagination: {
+        page,
+        limit,
+        total,
+        totalPages: Math.ceil(total / limit),
+      },
+    };
+  }
+
+  // Search events
+  static async searchEvents(
+    query: string,
+    filters?: EventFilterRequest,
+  ): Promise<PaginatedEventResponse> {
+    const page = filters?.page || 1;
+    const limit = filters?.limit || 10;
+    const skip = (page - 1) * limit;
+
+    const where: any = {
+      status: EventStatus.PUBLISHED,
+      OR: [
+        { title: { contains: query, mode: 'insensitive' } },
+        { description: { contains: query, mode: 'insensitive' } },
+      ],
+    };
+
+    if (filters?.category) {
+      where.categoryId = filters.category;
+    }
+
+    if (filters?.location) {
+      where.locationId = filters.location;
+    }
+
+    if (filters?.dateFrom) {
+      where.date = { gte: filters.dateFrom };
+    }
+
+    if (filters?.dateTo) {
+      where.date = {
+        ...where.date,
+        lte: filters.dateTo,
+      };
+    }
+
+    const [events, total] = await Promise.all([
+      prisma.event.findMany({
+        where,
+        include: { ticketTiers: true },
+        orderBy: { date: 'asc' },
+        skip,
+        take: limit,
+      }),
+      prisma.event.count({ where }),
+    ]);
+
+    return {
+      data: events.map((event) => toEventResponse(event)),
+      pagination: {
+        page,
+        limit,
+        total,
+        totalPages: Math.ceil(total / limit),
+      },
+    };
+  }
+
+  // Get organizer's events
+  static async getOrganizerEvents(user: User): Promise<EventResponse[]> {
+    const events = await prisma.event.findMany({
+      where: { organizerId: user.id },
+      include: { ticketTiers: true },
+      orderBy: { createdAt: 'desc' },
+    });
+
+    return events.map((event) => toEventResponse(event));
   }
 }

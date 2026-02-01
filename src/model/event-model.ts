@@ -48,6 +48,18 @@ export type UpdateEventRequest = {
   isFree?: boolean;
 };
 
+export type EventFilterRequest = {
+  category?: string;
+  location?: string;
+  dateFrom?: Date | string;
+  dateTo?: Date | string;
+  isFree?: boolean;
+  status?: EventStatus;
+  search?: string;
+  page?: number;
+  limit?: number;
+};
+
 export type EventResponse = {
   id: string;
   title: string;
@@ -68,6 +80,16 @@ export type EventResponse = {
   ticketTiers: TicketTierResponse[];
   createdAt: Date;
   updatedAt: Date;
+};
+
+export type PaginatedEventResponse = {
+  data: EventResponse[];
+  pagination: {
+    page: number;
+    limit: number;
+    total: number;
+    totalPages: number;
+  };
 };
 
 export function toTicketTierResponse(tier: TicketTier): TicketTierResponse {

@@ -1,9 +1,11 @@
 import { z, ZodType } from 'zod';
 import {
   CreateEventRequest,
+  EventFilterRequest,
   TicketTierRequest,
   UpdateEventRequest,
 } from '../model/event-model';
+import { EventStatus } from '../generated/prisma/enums';
 
 export class EventValidation {
   static readonly TICKET_TIER: ZodType<TicketTierRequest> = z.object({
@@ -81,5 +83,17 @@ export class EventValidation {
       .optional(),
     endDate: z.coerce.date().optional(),
     isFree: z.boolean().optional(),
+  });
+
+  static readonly FILTER: ZodType<EventFilterRequest> = z.object({
+    category: z.string().optional(),
+    location: z.string().optional(),
+    dateFrom: z.coerce.date().optional(),
+    dateTo: z.coerce.date().optional(),
+    isFree: z.boolean().optional(),
+    status: z.enum(EventStatus).optional(),
+    search: z.string().max(200).optional(),
+    page: z.coerce.number().int().min(1).optional(),
+    limit: z.coerce.number().int().min(1).max(100).optional(),
   });
 }
