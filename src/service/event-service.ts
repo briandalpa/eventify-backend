@@ -178,6 +178,42 @@ export class EventService {
     return toEventResponse(updatedEvent);
   }
 
+  // Delete event (ORGANIZER, own event only)
+  static async deleteEvent(user: User, eventId: string): Promise<void> {
+    // Get event and verify ownership
+    const event = await prisma.event.findUnique({
+      where: { id: eventId },
+    });
+
+    if (!event) {
+      throw new ResponseError(404, 'Event not found');
+    }
+
+    if (event.organizerId !== user.id) {
+      throw new ResponseError(403, 'You can only delete your own events');
+    }
+
+    // Check for active transaction
+    const activeTransaction = await prisma.transaction.count({
+      where: {
+        eventId,
+        status: { in: ['WAITING_PAYMENT', 'WAITING_CONFIRMATION'] },
+      },
+    });
+
+    if (activeTransaction > 0) {
+      throw new ResponseError(
+        409,
+        'Cannot delete event with active transactions',
+      );
+    }
+
+    // Delete event (cascade deletes ticket tiers)
+    await prisma.event.delete({
+      where: { id: eventId },
+    });
+  }
+
   // Get event by ID (PUBLIC)
   static async getEventById(eventId: string): Promise<EventResponse> {
     const event = await prisma.event.findUnique({

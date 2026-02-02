@@ -88,6 +88,19 @@ export class EventController {
     }
   }
 
+  // Delete event (DELETE /api/events/:id)
+  static async delete(req: UserRequest, res: Response, next: NextFunction) {
+    try {
+      const { id } = req.params;
+      await EventService.deleteEvent(req.user!, id);
+      res.status(200).json({
+        data: 'OK',
+      });
+    } catch (error) {
+      next(error);
+    }
+  }
+
   // Get organizer's events (GET /api/organizer/events)
   static async getOrganizerEvents(
     req: UserRequest,

@@ -14,4 +14,5 @@ apiRouter.delete('/api/users/current', UserController.logout);
 // Event API
 apiRouter.post('/api/events', EventController.create);
 apiRouter.patch('/api/events/:id', EventController.update);
+apiRouter.delete('/api/events/:id', EventController.delete);
 apiRouter.get('/api/organizer/events', EventController.getOrganizerEvents);

@@ -251,6 +251,34 @@ describe('Event Management API', () => {
     });
   });
 
+  describe('DELETE /api/events/:id', () => {
+    it('should delete own event as organizer', async () => {
+      // Create a new event to delete
+      const newEvent = await prisma.event.create({
+        data: {
+          title: 'Event to Delete',
+          description: 'This event will be deleted',
+          coverImage: 'https://example.com/cover.jpg',
+          images: [],
+          categoryId,
+          locationId,
+          venue: 'Test Venue',
+          date: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000),
+          organizerId: (await prisma.user.findUnique({
+            where: { token: organizerToken! },
+          }))!.id,
+        },
+      });
+
+      const response = await supertest(app)
+        .delete(`/api/events/${newEvent.id}`)
+        .set('X-API-TOKEN', organizerToken);
+
+      logger.debug(response.body);
+      expect(response.status).toBe(200);
+    });
+  });
+
   describe('GET /api/organizer/events', () => {
     it('should list organizer events', async () => {
       const response = await supertest(app)
