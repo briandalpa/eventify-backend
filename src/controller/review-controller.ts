@@ -67,4 +67,17 @@ export class ReviewController {
       next(error);
     }
   }
+
+  // Delete review (DELETE /api/reviews/:id)
+  static async delete(req: UserRequest, res: Response, next: NextFunction) {
+    try {
+      const { id } = req.params;
+      await ReviewService.deleteReview(req.user!, id);
+      res.status(200).json({
+        data: 'OK',
+      });
+    } catch (error) {
+      next(error);
+    }
+  }
 }

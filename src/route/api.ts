@@ -20,4 +20,5 @@ apiRouter.get('/api/organizer/events', EventController.getOrganizerEvents);
 
 // Review API
 apiRouter.post('/api/reviews', ReviewController.create);
+apiRouter.delete('/api/reviews/:id', ReviewController.delete);
 apiRouter.get('/api/organizer/reviews', ReviewController.getOrganizerReviews);

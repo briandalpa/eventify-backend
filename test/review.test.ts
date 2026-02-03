@@ -291,4 +291,115 @@ describe('Review & Rating API', () => {
       expect(response.body.data.reviews).toBeDefined();
     });
   });
+
+  describe('DELETE /api/reviews/:id', () => {
+    let deleteTransactionId1: string;
+    let deleteTransactionId2: string;
+    let deleteReviewId: string;
+
+    beforeAll(async () => {
+      // Create two completed transactions for delete tests
+      const deleteTx1 = await prisma.transaction.create({
+        data: {
+          userId: customerId,
+          eventId,
+          ticketTierId,
+          quantity: 1,
+          totalAmount: 5000,
+          status: TransactionStatus.DONE,
+        },
+      });
+
+      const deleteTx2 = await prisma.transaction.create({
+        data: {
+          userId: customerId,
+          eventId,
+          ticketTierId,
+          quantity: 1,
+          totalAmount: 5000,
+          status: TransactionStatus.DONE,
+        },
+      });
+
+      deleteTransactionId1 = deleteTx1.id;
+      deleteTransactionId2 = deleteTx2.id;
+
+      // Create review for the first transaction
+      const review = await prisma.review.create({
+        data: {
+          userId: customerId,
+          eventId,
+          transactionId: deleteTransactionId1,
+          rating: 5,
+          comment: 'Great event!',
+        },
+      });
+
+      deleteReviewId = review.id;
+    });
+
+    afterAll(async () => {
+      await prisma.review.deleteMany({
+        where: {
+          transactionId: {
+            in: [deleteTransactionId1, deleteTransactionId2],
+          },
+        },
+      });
+
+      await prisma.transaction.deleteMany({
+        where: {
+          id: {
+            in: [deleteTransactionId1, deleteTransactionId2],
+          },
+        },
+      });
+    });
+
+    it('should delete own review', async () => {
+      const response = await supertest(app)
+        .delete(`/api/reviews/${deleteReviewId}`)
+        .set('X-API-TOKEN', customerToken);
+
+      logger.debug(response.body);
+      expect(response.status).toBe(200);
+      expect(response.body.data).toBe('OK');
+    });
+
+    it('should reject delete of others review', async () => {
+      // Create another user
+      const otherCustomer = await prisma.user.create({
+        data: {
+          name: 'Other Review Customer',
+          email: 'other-review@test.com',
+          password: await bcrypt.hash('password123', 10),
+          role: 'CUSTOMER',
+          referralCode: `REF-${uuidv4()}`,
+          token: 'other-review-token',
+        },
+      });
+
+      // Create review for the second transaction by the first customer
+      const review = await prisma.review.create({
+        data: {
+          userId: customerId,
+          eventId,
+          transactionId: deleteTransactionId2,
+          rating: 4,
+          comment: 'Good event',
+        },
+      });
+
+      // Try to delete the review using the other customer's token
+      const response = await supertest(app)
+        .delete(`/api/reviews/${review.id}`)
+        .set('X-API-TOKEN', otherCustomer.token!);
+
+      logger.debug(response.body);
+      expect(response.status).toBe(403);
+
+      // Clean up
+      await prisma.user.delete({ where: { id: otherCustomer.id } });
+    });
+  });
 });

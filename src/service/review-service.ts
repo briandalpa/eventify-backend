@@ -1,3 +1,4 @@
+import { th } from 'zod/v4/locales';
 import { prisma } from '../application/database';
 import { ResponseError } from '../error/response-error';
 import { TransactionStatus, User } from '../generated/prisma/client';
@@ -181,5 +182,54 @@ export class ReviewService {
         totalPages: Math.ceil(total / limit),
       },
     };
+  }
+
+  // Delete review
+  static async deleteReview(user: User, reviewId: string): Promise<void> {
+    // Get review and verify ownership
+    const review = await prisma.review.findUnique({
+      where: { id: reviewId },
+    });
+
+    if (!review) {
+      throw new ResponseError(404, 'Review not found');
+    }
+
+    if (review.userId !== user.id) {
+      throw new ResponseError(403, 'You can only delete your own reviews');
+    }
+
+    // Delete review and update event rating
+    await prisma.$transaction(async (tx) => {
+      // Delete review
+      await tx.review.delete({
+        where: { id: reviewId },
+      });
+
+      // Get remaining reviews for this event
+      const remainingReviews = await tx.review.findMany({
+        where: { eventId: review.eventId },
+        select: { rating: true },
+      });
+
+      // Calculate new average rating or set to 0 if no reviews
+      let averageRating = 0;
+      if (remainingReviews.length > 0) {
+        const totalRating = remainingReviews.reduce(
+          (sum, r) => sum + r.rating,
+          0,
+        );
+        averageRating = totalRating / remainingReviews.length;
+      }
+
+      // Update event with new rating and total reviews
+      await tx.event.update({
+        where: { id: review.eventId },
+        data: {
+          averageRating,
+          totalReviews: remainingReviews.length,
+        },
+      });
+    });
   }
 }
