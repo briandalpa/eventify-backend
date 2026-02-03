@@ -30,6 +30,19 @@ export type CouponResponse = {
   updatedAt: Date;
 };
 
+export type ValidateCouponRequest = {
+  couponCode: string;
+  eventId: string;
+  amount: number;
+};
+
+export type ValidateCouponResponse = {
+  isValid: boolean;
+  discountAmount: number;
+  finalAmount: number;
+  message?: string;
+};
+
 export function toCouponResponse(coupon: Coupon): CouponResponse {
   return {
     id: coupon.id,

@@ -1,10 +1,12 @@
 import { prisma } from '../application/database';
 import { ResponseError } from '../error/response-error';
-import { User, UserRole } from '../generated/prisma/client';
+import { Coupon, User, UserRole } from '../generated/prisma/client';
 import {
   CouponResponse,
   CreateCouponRequest,
   toCouponResponse,
+  ValidateCouponRequest,
+  ValidateCouponResponse,
 } from '../model/coupon-model';
 import { CouponValidation } from '../validations/coupon-validation';
 import { Validation } from '../validations/validation';
@@ -81,5 +83,112 @@ export class CouponService {
     });
 
     return toCouponResponse(coupon);
+  }
+
+  // Validate coupon
+  static async validateCoupon(
+    request: ValidateCouponRequest,
+  ): Promise<ValidateCouponResponse> {
+    const validateRequest = Validation.validate<ValidateCouponRequest>(
+      CouponValidation.VALIDATE,
+      request,
+    );
+
+    const coupon = await prisma.coupon.findUnique({
+      where: { code: validateRequest.couponCode },
+    });
+
+    if (!coupon) {
+      return {
+        isValid: false,
+        discountAmount: 0,
+        finalAmount: validateRequest.amount,
+        message: 'Coupon not found',
+      };
+    }
+
+    // Check if coupon is active
+    if (!coupon.isActive) {
+      return {
+        isValid: false,
+        discountAmount: 0,
+        finalAmount: validateRequest.amount,
+        message: 'Coupon is not active',
+      };
+    }
+
+    // Check if coupon has expired
+    const now = new Date();
+    if (coupon.validUntil < now) {
+      return {
+        isValid: false,
+        discountAmount: 0,
+        finalAmount: validateRequest.amount,
+        message: 'Coupon has expired',
+      };
+    }
+
+    // Check if coupon is at usage limit
+    if (coupon.usedCount >= coupon.usageLimit) {
+      return {
+        isValid: false,
+        discountAmount: 0,
+        finalAmount: validateRequest.amount,
+        message: 'Coupon usage limit reached',
+      };
+    }
+
+    // Event-specific coupon validation
+    if (coupon.eventId && coupon.eventId !== validateRequest.eventId) {
+      return {
+        isValid: false,
+        discountAmount: 0,
+        finalAmount: validateRequest.amount,
+        message: 'This coupon is not valid for this event',
+      };
+    }
+
+    // Check minimum purchase requirement
+    if (validateRequest.amount < coupon.minPurchase) {
+      return {
+        isValid: false,
+        discountAmount: 0,
+        finalAmount: validateRequest.amount,
+        message: `Minimum purchase of ${coupon.minPurchase} required`,
+      };
+    }
+
+    // Calculate discount
+    const discountAmount = this.calculateDiscount(
+      coupon,
+      validateRequest.amount,
+    );
+    const finalAmount = Math.max(0, validateRequest.amount - discountAmount);
+
+    return {
+      isValid: true,
+      discountAmount,
+      finalAmount,
+    };
+  }
+
+  // Helper
+  private static calculateDiscount(coupon: Coupon, baseAmount: number): number {
+    if (baseAmount < coupon.minPurchase) {
+      return 0;
+    }
+
+    let discount = 0;
+
+    if (coupon.discountType === 'PERCENTAGE') {
+      discount = (baseAmount * coupon.discountValue) / 100;
+      if (coupon.maxDiscount) {
+        discount = Math.min(discount, coupon.maxDiscount);
+      }
+    } else if (coupon.discountType === 'FIXED') {
+      discount = coupon.discountValue;
+    }
+
+    return Math.min(discount, baseAmount);
   }
 }

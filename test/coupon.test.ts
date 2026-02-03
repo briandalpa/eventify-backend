@@ -174,4 +174,76 @@ describe('Coupon Management API', () => {
       expect(response.status).toBe(400);
     });
   });
+
+  describe('POST /api/coupons/validate', () => {
+    it('should validate coupon successfully', async () => {
+      const validateData = {
+        couponCode: 'DISCOUNT-20',
+        eventId,
+        amount: 100000,
+      };
+
+      const response = await supertest(app)
+        .post('/api/coupons/validate')
+        .set('X-API-TOKEN', customerToken)
+        .send(validateData);
+
+      expect(response.status).toBe(200);
+      expect(response.body.data.isValid).toBe(true);
+      expect(response.body.data.discountAmount).toBeGreaterThan(0);
+    });
+
+    it('should reject non-existent coupon', async () => {
+      const validateData = {
+        couponCode: 'NONEXISTENT',
+        eventId,
+        amount: 100000,
+      };
+
+      const response = await supertest(app)
+        .post('/api/coupons/validate')
+        .set('X-API-TOKEN', customerToken)
+        .send(validateData);
+
+      expect(response.status).toBe(200);
+      expect(response.body.data.isValid).toBe(false);
+    });
+
+    it('should validate event specific coupon', async () => {
+      // Create another event
+      const category = await prisma.category.findFirst();
+      const location = await prisma.location.findFirst();
+
+      const otherEvent = await prisma.event.create({
+        data: {
+          title: 'Other Event',
+          description: 'Different event',
+          coverImage: 'https://example.com/cover.jpg',
+          images: [],
+          categoryId: category!.id,
+          locationId: location!.id,
+          venue: 'Other Venue',
+          date: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000),
+          organizerId,
+        },
+      });
+
+      // Try to use event-specific coupon on different event
+      const validateData = {
+        couponCode: 'DISCOUNT-20',
+        eventId: otherEvent.id, // Different event
+        amount: 100000,
+      };
+
+      const response = await supertest(app)
+        .post('/api/coupons/validate')
+        .set('X-API-TOKEN', customerToken)
+        .send(validateData);
+
+      expect(response.status).toBe(200);
+      expect(response.body.data.isValid).toBe(false);
+
+      await prisma.event.delete({ where: { id: otherEvent.id } });
+    });
+  });
 });

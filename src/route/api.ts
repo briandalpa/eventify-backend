@@ -26,3 +26,4 @@ apiRouter.get('/api/organizer/reviews', ReviewController.getOrganizerReviews);
 
 // Coupon API
 apiRouter.post('/api/coupons', CouponController.create);
+apiRouter.post('/api/coupons/validate', CouponController.validate);
