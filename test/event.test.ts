@@ -169,6 +169,15 @@ describe('Event Management API', () => {
   });
 
   describe('PATCH /api/events/:id', () => {
+    let otherOrganizerEmail = 'other-organizer@test.com';
+
+    afterEach(async () => {
+      // Clean up other organizer if exists
+      await prisma.user.deleteMany({
+        where: { email: otherOrganizerEmail },
+      });
+    });
+
     it('should update own event as organizer', async () => {
       const updateData = {
         title: 'Updated Tech Conference',
@@ -205,10 +214,6 @@ describe('Event Management API', () => {
 
       logger.debug(response.body);
       expect(response.status).toBe(403);
-
-      await prisma.user.delete({
-        where: { email: 'other-organizer@test.com' },
-      });
     });
   });
 

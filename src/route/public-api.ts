@@ -1,6 +1,7 @@
 import express from 'express';
 import { UserController } from '../controller/user-controller';
 import { EventController } from '../controller/event-controller';
+import { ReviewController } from '../controller/review-controller';
 
 export const publicRouter = express.Router();
 
@@ -12,3 +13,9 @@ publicRouter.post('/api/users/login', UserController.login);
 publicRouter.get('/api/events', EventController.list);
 publicRouter.get('/api/events/search', EventController.search);
 publicRouter.get('/api/events/:id', EventController.getById);
+
+// Review API (Public)
+publicRouter.get(
+  '/api/events/:eventId/reviews',
+  ReviewController.getEventReviews,
+);
