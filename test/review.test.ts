@@ -256,4 +256,39 @@ describe('Review & Rating API', () => {
       await prisma.transaction.delete({ where: { id: anotherTx.id } });
     });
   });
+
+  describe('GET /api/events/:eventId/reviews', () => {
+    it('should list event reviews', async () => {
+      const response = await supertest(app).get(
+        `/api/events/${eventId}/reviews`,
+      );
+
+      expect(response.status).toBe(200);
+      expect(response.body.data.reviews).toBeDefined();
+      expect(response.body.data.pagination).toBeDefined();
+    });
+
+    it('should include pagination info', async () => {
+      const response = await supertest(app).get(
+        `/api/events/${eventId}/reviews?page=1&limit=10`,
+      );
+
+      logger.debug(response.body);
+      expect(response.status).toBe(200);
+      expect(response.body.data.pagination.page).toBe(1);
+      expect(response.body.data.pagination.limit).toBe(10);
+    });
+  });
+
+  describe('GET /api/organizer/reviews', () => {
+    it('should list organizer reviews', async () => {
+      const response = await supertest(app)
+        .get('/api/organizer/reviews')
+        .set('X-API-TOKEN', organizerToken);
+
+      logger.debug(response.body);
+      expect(response.status).toBe(200);
+      expect(response.body.data.reviews).toBeDefined();
+    });
+  });
 });

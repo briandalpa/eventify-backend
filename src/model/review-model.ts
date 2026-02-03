@@ -17,6 +17,18 @@ export type ReviewResponse = {
   userName?: string;
 };
 
+export type EventReviewsResponse = {
+  reviews: ReviewResponse[];
+  averageRating: number;
+  totalReviews: number;
+  pagination: {
+    page: number;
+    limit: number;
+    total: number;
+    totalPages: number;
+  };
+};
+
 export function toReviewResponse(
   review: Review & { user?: { name: string } },
 ): ReviewResponse {

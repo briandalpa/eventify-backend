@@ -20,3 +20,4 @@ apiRouter.get('/api/organizer/events', EventController.getOrganizerEvents);
 
 // Review API
 apiRouter.post('/api/reviews', ReviewController.create);
+apiRouter.get('/api/organizer/reviews', ReviewController.getOrganizerReviews);

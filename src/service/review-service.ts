@@ -3,6 +3,7 @@ import { ResponseError } from '../error/response-error';
 import { TransactionStatus, User } from '../generated/prisma/client';
 import {
   CreateReviewRequest,
+  EventReviewsResponse,
   ReviewResponse,
   toReviewResponse,
 } from '../model/review-model';
@@ -93,5 +94,92 @@ export class ReviewService {
         'Review already exists for this transaction',
       );
     }
+  }
+
+  // Get event reviews
+  static async getEventReviews(
+    eventId: string,
+    page: number = 1,
+    limit: number = 10,
+  ): Promise<EventReviewsResponse> {
+    // Verify event exists
+    const event = await prisma.event.findUnique({
+      where: { id: eventId },
+    });
+
+    if (!event) {
+      throw new ResponseError(404, 'Event not found');
+    }
+
+    const skip = (page - 1) * limit;
+
+    // Get reviews and total count
+    const [reviews, total] = await Promise.all([
+      prisma.review.findMany({
+        where: { eventId },
+        include: { user: { select: { name: true } } },
+        orderBy: { createdAt: 'desc' },
+        skip,
+        take: limit,
+      }),
+      prisma.review.count({
+        where: { eventId },
+      }),
+    ]);
+
+    return {
+      reviews: reviews.map((r) => toReviewResponse(r)),
+      averageRating: event.averageRating,
+      totalReviews: event.totalReviews,
+      pagination: {
+        page,
+        limit,
+        total,
+        totalPages: Math.ceil(total / limit),
+      },
+    };
+  }
+
+  // Get organizer's reviews (reviews for their events)
+  static async getOrganizerReviews(
+    user: User,
+    page: number = 1,
+    limit: number = 10,
+  ): Promise<EventReviewsResponse> {
+    const skip = (page - 1) * limit;
+
+    // Get reviews for organizer's events
+    const [reviews, total] = await Promise.all([
+      prisma.review.findMany({
+        where: {
+          event: {
+            organizerId: user.id,
+          },
+        },
+        include: { user: { select: { name: true } } },
+        orderBy: { createdAt: 'desc' },
+        skip,
+        take: limit,
+      }),
+      prisma.review.count({
+        where: {
+          event: {
+            organizerId: user.id,
+          },
+        },
+      }),
+    ]);
+
+    return {
+      reviews: reviews.map((r) => toReviewResponse(r)),
+      averageRating: 0,
+      totalReviews: total,
+      pagination: {
+        page,
+        limit,
+        total,
+        totalPages: Math.ceil(total / limit),
+      },
+    };
   }
 }
