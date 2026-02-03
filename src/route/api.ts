@@ -2,6 +2,7 @@ import express from 'express';
 import { authMiddleware } from '../middleware/auth-middleware';
 import { UserController } from '../controller/user-controller';
 import { EventController } from '../controller/event-controller';
+import { ReviewController } from '../controller/review-controller';
 
 export const apiRouter = express.Router();
 apiRouter.use(authMiddleware);
@@ -16,3 +17,6 @@ apiRouter.post('/api/events', EventController.create);
 apiRouter.patch('/api/events/:id', EventController.update);
 apiRouter.delete('/api/events/:id', EventController.delete);
 apiRouter.get('/api/organizer/events', EventController.getOrganizerEvents);
+
+// Review API
+apiRouter.post('/api/reviews', ReviewController.create);
