@@ -193,4 +193,37 @@ describe('Transaction Management API', () => {
       );
     });
   });
+
+  describe('PATCH /api/transactions/:id/accept', () => {
+    it('should accept transaction as organizer', async () => {
+      const response = await supertest(app)
+        .patch(`/api/transactions/${transactionId}/accept`)
+        .set('X-API-TOKEN', organizerToken);
+
+      expect(response.status).toBe(200);
+      expect(response.body.data.status).toBe(TransactionStatus.DONE);
+    });
+
+    it('should reject acceptance by non-organizer', async () => {
+      // Create another transaction first
+      const tx = await prisma.transaction.create({
+        data: {
+          userId: customerId,
+          eventId,
+          ticketTierId,
+          quantity: 1,
+          totalAmount: 10000,
+          status: TransactionStatus.WAITING_CONFIRMATION,
+        },
+      });
+
+      const response = await supertest(app)
+        .patch(`/api/transactions/${tx.id}/accept`)
+        .set('X-API-TOKEN', customerToken);
+
+      expect(response.status).toBe(403);
+
+      await prisma.transaction.delete({ where: { id: tx.id } });
+    });
+  });
 });

@@ -1,6 +1,6 @@
 import { prisma } from '../application/database';
 import { ResponseError } from '../error/response-error';
-import { TransactionStatus, User } from '../generated/prisma/client';
+import { TransactionStatus, User, UserRole } from '../generated/prisma/client';
 import {
   CreateTransactionRequest,
   PaymentProofRequest,
@@ -184,6 +184,52 @@ export class TransactionService {
         // Note: In a real app, you'd store the proofUrl somewhere
       },
     });
+
+    return toTransactionResponse(updated);
+  }
+
+  // Accept transaction (ORGANIZER)
+  static async acceptTransaction(
+    user: User,
+    transactionId: string,
+  ): Promise<TransactionResponse> {
+    if (user.role !== UserRole.ORGANIZER) {
+      throw new ResponseError(403, 'Only organizers can accept transactions');
+    }
+
+    const transaction = await prisma.transaction.findUnique({
+      where: { id: transactionId },
+      include: { event: true },
+    });
+
+    if (!transaction) {
+      throw new ResponseError(404, 'Transaction not found');
+    }
+
+    if (transaction.event.organizerId !== user.id) {
+      throw new ResponseError(
+        403,
+        'You can only accept transactions for your own events',
+      );
+    }
+
+    if (transaction.status !== TransactionStatus.WAITING_CONFIRMATION) {
+      throw new ResponseError(
+        409,
+        'Only transactions awaiting confirmation can be accepted',
+      );
+    }
+
+    // Update transaction status
+    const updated = await prisma.transaction.update({
+      where: { id: transactionId },
+      data: {
+        status: TransactionStatus.DONE,
+        expiresAt: null,
+      },
+    });
+
+    // TODO: Send email notification to user
 
     return toTransactionResponse(updated);
   }

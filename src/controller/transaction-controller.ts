@@ -52,4 +52,20 @@ export class TransactionController {
       next(error);
     }
   }
+
+  // Accept transaction (PATCH /api/transactions/:id/accept)
+  static async accept(req: UserRequest, res: Response, next: NextFunction) {
+    try {
+      const { id } = req.params;
+      const response = await TransactionService.acceptTransaction(
+        req.user!,
+        id,
+      );
+      res.status(200).json({
+        data: response,
+      });
+    } catch (error) {
+      next(error);
+    }
+  }
 }
