@@ -226,4 +226,33 @@ describe('Transaction Management API', () => {
       await prisma.transaction.delete({ where: { id: tx.id } });
     });
   });
+
+  describe('PATCH /api/transactions/:id/reject', () => {
+    it('should reject transaction as organizer', async () => {
+      // Create a transaction to reject
+      const tx = await prisma.transaction.create({
+        data: {
+          userId: customerId,
+          eventId,
+          ticketTierId,
+          quantity: 1,
+          totalAmount: 10000,
+          status: TransactionStatus.WAITING_CONFIRMATION,
+        },
+      });
+
+      // Increment sold count first
+      await prisma.ticketTier.update({
+        where: { id: ticketTierId },
+        data: { sold: { increment: 1 } },
+      });
+
+      const response = await supertest(app)
+        .patch(`/api/transactions/${tx.id}/reject`)
+        .set('X-API-TOKEN', organizerToken);
+
+      expect(response.status).toBe(200);
+      expect(response.body.data.status).toBe(TransactionStatus.REJECTED);
+    });
+  });
 });

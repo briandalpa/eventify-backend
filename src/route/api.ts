@@ -27,6 +27,7 @@ apiRouter.post(
   TransactionController.uploadProof,
 );
 apiRouter.patch('/api/transactions/:id/accept', TransactionController.accept);
+apiRouter.patch('/api/transactions/:id/reject', TransactionController.reject);
 
 // Review API
 apiRouter.post('/api/reviews', ReviewController.create);

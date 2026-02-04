@@ -68,4 +68,20 @@ export class TransactionController {
       next(error);
     }
   }
+
+  // Reject transaction (PATCH /api/transactions/:id/reject)
+  static async reject(req: UserRequest, res: Response, next: NextFunction) {
+    try {
+      const { id } = req.params;
+      const response = await TransactionService.rejectTransaction(
+        req.user!,
+        id,
+      );
+      res.status(200).json({
+        data: response,
+      });
+    } catch (error) {
+      next(error);
+    }
+  }
 }
