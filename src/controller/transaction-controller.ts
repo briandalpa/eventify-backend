@@ -84,4 +84,20 @@ export class TransactionController {
       next(error);
     }
   }
+
+  // Cancel transaction (PATCH /api/transactions/:id/cancel)
+  static async cancel(req: UserRequest, res: Response, next: NextFunction) {
+    try {
+      const { id } = req.params;
+      const response = await TransactionService.cancelTransaction(
+        req.user!,
+        id,
+      );
+      res.status(200).json({
+        data: response,
+      });
+    } catch (error) {
+      next(error);
+    }
+  }
 }

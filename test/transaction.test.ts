@@ -255,4 +255,33 @@ describe('Transaction Management API', () => {
       expect(response.body.data.status).toBe(TransactionStatus.REJECTED);
     });
   });
+
+  describe('PATCH /api/transactions/:id/cancel', () => {
+    it('should cancel transaction as customer', async () => {
+      // Create a transaction to cancel
+      const tx = await prisma.transaction.create({
+        data: {
+          userId: customerId,
+          eventId,
+          ticketTierId,
+          quantity: 1,
+          totalAmount: 10000,
+          status: TransactionStatus.WAITING_PAYMENT,
+        },
+      });
+
+      // Increment sold count
+      await prisma.ticketTier.update({
+        where: { id: ticketTierId },
+        data: { sold: { increment: 1 } },
+      });
+
+      const response = await supertest(app)
+        .patch(`/api/transactions/${tx.id}/cancel`)
+        .set('X-API-TOKEN', customerToken);
+
+      expect(response.status).toBe(200);
+      expect(response.body.data.status).toBe(TransactionStatus.CANCELED);
+    });
+  });
 });

@@ -7,7 +7,7 @@ import {
   toTransactionResponse,
   TransactionResponse,
 } from '../model/transaction-model';
-import { canBeRejected } from '../utils/transaction';
+import { isPendingTransaction } from '../utils/transaction';
 import { TransactionValidation } from '../validations/transaction-validation';
 import { Validation } from '../validations/validation';
 
@@ -260,7 +260,7 @@ export class TransactionService {
       );
     }
 
-    if (!canBeRejected(transaction.status)) {
+    if (!isPendingTransaction(transaction.status)) {
       throw new ResponseError(409, 'Only pending transactions can be rejected');
     }
 
@@ -307,6 +307,75 @@ export class TransactionService {
     });
 
     // TODO: Send email notification to user
+
+    return toTransactionResponse(updated);
+  }
+
+  // Cancel transaction (CUSTOMER)
+  static async cancelTransaction(
+    user: User,
+    transactionId: string,
+  ): Promise<TransactionResponse> {
+    const transaction = await prisma.transaction.findUnique({
+      where: { id: transactionId },
+    });
+
+    if (!transaction) {
+      throw new ResponseError(404, 'Transaction not found');
+    }
+
+    if (transaction.userId !== user.id) {
+      throw new ResponseError(403, 'You can only cancel your own transactions');
+    }
+
+    if (!isPendingTransaction(transaction.status)) {
+      throw new ResponseError(
+        409,
+        'Only pending transactions can be cancelled',
+      );
+    }
+
+    // Rollback in atomic operation
+    const updated = await prisma.$transaction(async (tx) => {
+      // Update transaction status
+      const result = await tx.transaction.update({
+        where: { id: transactionId },
+        data: {
+          status: TransactionStatus.CANCELED,
+          expiresAt: null,
+        },
+      });
+
+      // Restore seats
+      await tx.ticketTier.update({
+        where: { id: transaction.ticketTierId },
+        data: {
+          sold: { decrement: transaction.quantity },
+        },
+      });
+
+      // Refund points
+      if (transaction.pointsUsed > 0) {
+        await tx.user.update({
+          where: { id: transaction.userId },
+          data: {
+            points: { increment: transaction.pointsUsed },
+          },
+        });
+      }
+
+      // Refund coupon usage
+      if (transaction.couponId) {
+        await tx.coupon.update({
+          where: { id: transaction.couponId },
+          data: {
+            usedCount: { decrement: 1 },
+          },
+        });
+      }
+
+      return result;
+    });
 
     return toTransactionResponse(updated);
   }
