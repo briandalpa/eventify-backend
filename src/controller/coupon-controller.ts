@@ -42,6 +42,20 @@ export class CouponController {
     }
   }
 
+  // List coupons (GET /api/coupons)
+  static async list(req: UserRequest, res: Response, next: NextFunction) {
+    try {
+      const page = req.query.page ? parseInt(req.query.page as string) : 1;
+      const limit = req.query.limit ? parseInt(req.query.limit as string) : 10;
+      const eventId = req.query.eventId as string | undefined;
+
+      const response = await CouponService.listCoupons(page, limit, eventId);
+      res.status(200).json(response);
+    } catch (error) {
+      next(error);
+    }
+  }
+
   // Update coupon (PATCH /api/coupons/:id)
   static async update(req: UserRequest, res: Response, next: NextFunction) {
     try {

@@ -294,6 +294,44 @@ export class CouponService {
     });
   }
 
+  // List coupons
+  static async listCoupons(
+    page: number = 1,
+    limit: number = 10,
+    eventId?: string,
+  ): Promise<PaginatedCouponResponse> {
+    const skip = (page - 1) * limit;
+
+    const where: any = {
+      isActive: true,
+      validUntil: { gte: new Date() },
+    };
+
+    if (eventId) {
+      where.eventId = eventId;
+    }
+
+    const [coupons, total] = await Promise.all([
+      prisma.coupon.findMany({
+        where,
+        orderBy: { createdAt: 'desc' },
+        skip,
+        take: limit,
+      }),
+      prisma.coupon.count({ where }),
+    ]);
+
+    return {
+      data: coupons.map((c) => toCouponResponse(c)),
+      pagination: {
+        page,
+        limit,
+        total,
+        totalPages: Math.ceil(total / limit),
+      },
+    };
+  }
+
   // Helper
   private static calculateDiscount(coupon: Coupon, baseAmount: number): number {
     if (baseAmount < coupon.minPurchase) {

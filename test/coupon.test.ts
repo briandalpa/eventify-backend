@@ -308,4 +308,23 @@ describe('Coupon Management API', () => {
       expect(response.status).toBe(403);
     });
   });
+
+  describe('GET /api/coupons', () => {
+    it('should list active coupons', async () => {
+      const response = await supertest(app).get('/api/coupons?page=1&limit=10');
+
+      expect(response.status).toBe(200);
+      expect(response.body.data).toBeDefined();
+      expect(response.body.pagination).toBeDefined();
+    });
+
+    it('should filter coupons by event', async () => {
+      const response = await supertest(app).get(
+        `/api/coupons?eventId=${eventId}`,
+      );
+
+      expect(response.status).toBe(200);
+      expect(Array.isArray(response.body.data)).toBe(true);
+    });
+  });
 });
