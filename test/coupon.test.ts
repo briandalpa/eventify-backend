@@ -277,4 +277,35 @@ describe('Coupon Management API', () => {
       expect(response.status).toBe(403);
     });
   });
+
+  describe('DELETE /api/coupons/:id', () => {
+    it('should delete coupon as organizer', async () => {
+      // Create coupon to delete
+      const coupon = await prisma.coupon.create({
+        data: {
+          code: 'DELETE-ME',
+          discountType: DiscountType.FIXED,
+          discountValue: 5000,
+          usageLimit: 50,
+          validFrom: new Date(),
+          validUntil: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000),
+          eventId,
+        },
+      });
+
+      const response = await supertest(app)
+        .delete(`/api/coupons/${coupon.id}`)
+        .set('X-API-TOKEN', organizerToken);
+
+      expect(response.status).toBe(200);
+    });
+
+    it('should reject delete by non-organizer', async () => {
+      const response = await supertest(app)
+        .delete(`/api/coupons/${couponId}`)
+        .set('X-API-TOKEN', customerToken);
+
+      expect(response.status).toBe(403);
+    });
+  });
 });

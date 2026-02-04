@@ -188,7 +188,7 @@ export class CouponService {
       throw new ResponseError(404, 'Coupon not found');
     }
 
-    // Event-specific coupons can only be updated by organizers of that event
+    // Event specific coupons can only be updated by organizers of that event
     if (coupon.eventId) {
       if (user.role !== UserRole.ORGANIZER) {
         throw new ResponseError(
@@ -256,6 +256,42 @@ export class CouponService {
     });
 
     return toCouponResponse(updated);
+  }
+
+  // Delete coupon
+  static async deleteCoupon(user: User, couponId: string): Promise<void> {
+    const coupon = await prisma.coupon.findUnique({
+      where: { id: couponId },
+    });
+
+    if (!coupon) {
+      throw new ResponseError(404, 'Coupon not found');
+    }
+
+    // Event specific coupons can only be deleted by organizers of that event
+    if (coupon.eventId) {
+      if (user.role !== UserRole.ORGANIZER) {
+        throw new ResponseError(
+          403,
+          'Only organizers can delete event-specific coupons',
+        );
+      }
+
+      const event = await prisma.event.findUnique({
+        where: { id: coupon.eventId },
+      });
+
+      if (!event || event.organizerId !== user.id) {
+        throw new ResponseError(
+          403,
+          'You can only delete coupons for your own events',
+        );
+      }
+    }
+
+    await prisma.coupon.delete({
+      where: { id: couponId },
+    });
   }
 
   // Helper

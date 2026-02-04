@@ -28,3 +28,4 @@ apiRouter.get('/api/organizer/reviews', ReviewController.getOrganizerReviews);
 apiRouter.post('/api/coupons', CouponController.create);
 apiRouter.post('/api/coupons/validate', CouponController.validate);
 apiRouter.patch('/api/coupons/:id', CouponController.update);
+apiRouter.delete('/api/coupons/:id', CouponController.delete);

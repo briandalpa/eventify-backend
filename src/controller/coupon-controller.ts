@@ -58,4 +58,17 @@ export class CouponController {
       next(error);
     }
   }
+
+  // Delete coupon (DELETE /api/coupons/:id)
+  static async delete(req: UserRequest, res: Response, next: NextFunction) {
+    try {
+      const { id } = req.params;
+      await CouponService.deleteCoupon(req.user!, id);
+      res.status(200).json({
+        data: 'OK',
+      });
+    } catch (error) {
+      next(error);
+    }
+  }
 }
