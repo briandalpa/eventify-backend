@@ -8,6 +8,15 @@ export type CreateTransactionRequest = {
   couponCode?: string;
 };
 
+export type TransactionFilterRequest = {
+  status?: TransactionStatus;
+  eventId?: string;
+  dateFrom?: Date | string;
+  dateTo?: Date | string;
+  page?: number;
+  limit?: number;
+};
+
 export type PaymentProofRequest = {
   proofUrl: string;
 };
@@ -25,6 +34,16 @@ export type TransactionResponse = {
   couponId?: string;
   createdAt: Date;
   expiresAt?: Date;
+};
+
+export type PaginatedTransactionResponse = {
+  data: TransactionResponse[];
+  pagination: {
+    page: number;
+    limit: number;
+    total: number;
+    totalPages: number;
+  };
 };
 
 export function toTransactionResponse(

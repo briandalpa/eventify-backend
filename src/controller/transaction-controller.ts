@@ -3,6 +3,7 @@ import { UserRequest } from '../types/user-request';
 import {
   CreateTransactionRequest,
   PaymentProofRequest,
+  TransactionFilterRequest,
 } from '../model/transaction-model';
 import { Validation } from '../validations/validation';
 import { TransactionValidation } from '../validations/transaction-validation';
@@ -96,6 +97,27 @@ export class TransactionController {
       res.status(200).json({
         data: response,
       });
+    } catch (error) {
+      next(error);
+    }
+  }
+
+  // Get user's transactions (GET /api/transactions)
+  static async getUserTransactions(
+    req: UserRequest,
+    res: Response,
+    next: NextFunction,
+  ) {
+    try {
+      const filters = Validation.validate<TransactionFilterRequest>(
+        TransactionValidation.FILTER,
+        req.query,
+      );
+      const response = await TransactionService.getUserTransactions(
+        req.user!,
+        filters,
+      );
+      res.status(200).json(response);
     } catch (error) {
       next(error);
     }

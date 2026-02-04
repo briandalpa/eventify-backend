@@ -284,4 +284,16 @@ describe('Transaction Management API', () => {
       expect(response.body.data.status).toBe(TransactionStatus.CANCELED);
     });
   });
+
+  describe('GET /api/transactions', () => {
+    it('should list user transactions', async () => {
+      const response = await supertest(app)
+        .get('/api/transactions')
+        .set('X-API-TOKEN', customerToken);
+
+      expect(response.status).toBe(200);
+      expect(response.body.data).toBeDefined();
+      expect(Array.isArray(response.body.data)).toBe(true);
+    });
+  });
 });
