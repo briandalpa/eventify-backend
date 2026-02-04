@@ -177,4 +177,20 @@ describe('Transaction Management API', () => {
       });
     });
   });
+
+  describe('POST /api/transactions/:id/upload-proof', () => {
+    it('should upload payment proof', async () => {
+      const response = await supertest(app)
+        .post(`/api/transactions/${transactionId}/upload-proof`)
+        .set('X-API-TOKEN', customerToken)
+        .send({
+          proofUrl: 'https://example.com/proof.jpg',
+        });
+
+      expect(response.status).toBe(200);
+      expect(response.body.data.status).toBe(
+        TransactionStatus.WAITING_CONFIRMATION,
+      );
+    });
+  });
 });

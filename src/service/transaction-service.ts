@@ -3,6 +3,7 @@ import { ResponseError } from '../error/response-error';
 import { TransactionStatus, User } from '../generated/prisma/client';
 import {
   CreateTransactionRequest,
+  PaymentProofRequest,
   toTransactionResponse,
   TransactionResponse,
 } from '../model/transaction-model';
@@ -140,6 +141,51 @@ export class TransactionService {
     });
 
     return toTransactionResponse(transaction);
+  }
+
+  // Upload payment proof
+  static async uploadPaymentProof(
+    user: User,
+    transactionId: string,
+    request: PaymentProofRequest,
+  ): Promise<TransactionResponse> {
+    const validateRequest = Validation.validate<PaymentProofRequest>(
+      TransactionValidation.PAYMENT_PROOF,
+      request,
+    );
+
+    const transaction = await prisma.transaction.findUnique({
+      where: { id: transactionId },
+    });
+
+    if (!transaction) {
+      throw new ResponseError(404, 'Transaction not found');
+    }
+
+    if (transaction.userId !== user.id) {
+      throw new ResponseError(
+        403,
+        'You can only upload proof for your own transactions',
+      );
+    }
+
+    if (transaction.status !== TransactionStatus.WAITING_PAYMENT) {
+      throw new ResponseError(
+        409,
+        'Payment proof can only be uploaded for transactions awaiting payment',
+      );
+    }
+
+    // Update transaction status to waiting for confirmation
+    const updated = await prisma.transaction.update({
+      where: { id: transactionId },
+      data: {
+        status: TransactionStatus.WAITING_CONFIRMATION,
+        // Note: In a real app, you'd store the proofUrl somewhere
+      },
+    });
+
+    return toTransactionResponse(updated);
   }
 
   // Helper: Calculate discount

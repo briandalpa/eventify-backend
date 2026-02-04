@@ -1,5 +1,8 @@
 import { z, ZodType } from 'zod';
-import { CreateTransactionRequest } from '../model/transaction-model';
+import {
+  CreateTransactionRequest,
+  PaymentProofRequest,
+} from '../model/transaction-model';
 
 export class TransactionValidation {
   static readonly CREATE: ZodType<CreateTransactionRequest> = z.object({
@@ -8,5 +11,9 @@ export class TransactionValidation {
     quantity: z.number().int().min(1, 'Quantity must be at least 1'),
     pointsUsed: z.number().int().min(0).default(0).optional(),
     couponCode: z.string().max(50).optional(),
+  });
+
+  static readonly PAYMENT_PROOF: ZodType<PaymentProofRequest> = z.object({
+    proofUrl: z.url('Invalid proof URL'),
   });
 }

@@ -8,6 +8,10 @@ export type CreateTransactionRequest = {
   couponCode?: string;
 };
 
+export type PaymentProofRequest = {
+  proofUrl: string;
+};
+
 export type TransactionResponse = {
   id: string;
   userId: string;

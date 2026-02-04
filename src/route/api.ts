@@ -22,6 +22,10 @@ apiRouter.get('/api/organizer/events', EventController.getOrganizerEvents);
 
 // Transaction API
 apiRouter.post('/api/transactions', TransactionController.create);
+apiRouter.post(
+  '/api/transactions/:id/upload-proof',
+  TransactionController.uploadProof,
+);
 
 // Review API
 apiRouter.post('/api/reviews', ReviewController.create);
