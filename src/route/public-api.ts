@@ -3,6 +3,7 @@ import { UserController } from '../controller/user-controller';
 import { EventController } from '../controller/event-controller';
 import { ReviewController } from '../controller/review-controller';
 import { CouponController } from '../controller/coupon-controller';
+import { CategoryController } from '../controller/category-controller';
 
 export const publicRouter = express.Router();
 
@@ -23,3 +24,6 @@ publicRouter.get(
 
 // Coupon API (Public)
 publicRouter.get('/api/coupons', CouponController.list);
+
+// Category and Location API (Public)
+publicRouter.get('/api/categories', CategoryController.list);
