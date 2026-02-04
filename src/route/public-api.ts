@@ -2,6 +2,7 @@ import express from 'express';
 import { UserController } from '../controller/user-controller';
 import { EventController } from '../controller/event-controller';
 import { ReviewController } from '../controller/review-controller';
+import { CouponController } from '../controller/coupon-controller';
 
 export const publicRouter = express.Router();
 
@@ -19,3 +20,6 @@ publicRouter.get(
   '/api/events/:eventId/reviews',
   ReviewController.getEventReviews,
 );
+
+// Coupon API (Public)
+publicRouter.get('/api/coupons', CouponController.list);
