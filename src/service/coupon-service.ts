@@ -4,6 +4,7 @@ import { Coupon, User, UserRole } from '../generated/prisma/client';
 import {
   CouponResponse,
   CreateCouponRequest,
+  PaginatedCouponResponse,
   toCouponResponse,
   UpdateCouponRequest,
   ValidateCouponRequest,
@@ -11,16 +12,6 @@ import {
 } from '../model/coupon-model';
 import { CouponValidation } from '../validations/coupon-validation';
 import { Validation } from '../validations/validation';
-
-export type PaginatedCouponResponse = {
-  data: CouponResponse[];
-  pagination: {
-    page: number;
-    limit: number;
-    total: number;
-    totalPages: number;
-  };
-};
 
 export class CouponService {
   // Create coupon

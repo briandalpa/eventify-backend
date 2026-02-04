@@ -53,6 +53,16 @@ export type ValidateCouponResponse = {
   message?: string;
 };
 
+export type PaginatedCouponResponse = {
+  data: CouponResponse[];
+  pagination: {
+    page: number;
+    limit: number;
+    total: number;
+    totalPages: number;
+  };
+};
+
 export function toCouponResponse(coupon: Coupon): CouponResponse {
   return {
     id: coupon.id,
