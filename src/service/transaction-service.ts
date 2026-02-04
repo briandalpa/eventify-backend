@@ -1,0 +1,164 @@
+import { prisma } from '../application/database';
+import { ResponseError } from '../error/response-error';
+import { TransactionStatus, User } from '../generated/prisma/client';
+import {
+  CreateTransactionRequest,
+  toTransactionResponse,
+  TransactionResponse,
+} from '../model/transaction-model';
+import { TransactionValidation } from '../validations/transaction-validation';
+import { Validation } from '../validations/validation';
+
+export class TransactionService {
+  // Create transaction
+  static async createTransaction(
+    user: User,
+    request: CreateTransactionRequest,
+  ): Promise<TransactionResponse> {
+    // Validate request
+    const createRequest = Validation.validate<CreateTransactionRequest>(
+      TransactionValidation.CREATE,
+      request,
+    );
+
+    // Verify event exists
+    const event = await prisma.event.findUnique({
+      where: { id: createRequest.eventId },
+    });
+
+    if (!event) {
+      throw new ResponseError(404, 'Event not found');
+    }
+
+    // Verify ticket tier exists and belongs to event
+    const ticketTier = await prisma.ticketTier.findUnique({
+      where: { id: createRequest.ticketTierId },
+    });
+
+    if (!ticketTier || ticketTier.eventId !== createRequest.eventId) {
+      throw new ResponseError(404, 'Ticket tier not found');
+    }
+
+    // Check seat availability
+    const availableSeats = ticketTier.quantity - ticketTier.sold;
+    if (availableSeats < createRequest.quantity) {
+      throw new ResponseError(409, `Only ${availableSeats} seats available`);
+    }
+
+    // Validate points balance
+    if (createRequest.pointsUsed && createRequest.pointsUsed > 0) {
+      if (user.points < createRequest.pointsUsed) {
+        throw new ResponseError(400, 'Insufficient points balance');
+      }
+    }
+
+    // Validate and apply coupon if provided
+    let coupon = null;
+    let discountAmount = 0;
+
+    if (createRequest.couponCode) {
+      coupon = await prisma.coupon.findUnique({
+        where: { code: createRequest.couponCode },
+      });
+
+      if (!coupon) {
+        throw new ResponseError(404, 'Coupon not found');
+      }
+
+      // Validate coupon
+      const now = new Date();
+      if (coupon.validUntil < now) {
+        throw new ResponseError(400, 'Coupon has expired');
+      }
+
+      if (!coupon.isActive || coupon.usedCount >= coupon.usageLimit) {
+        throw new ResponseError(400, 'Coupon is not available');
+      }
+
+      // Event-specific coupon validation
+      if (coupon.eventId && coupon.eventId !== createRequest.eventId) {
+        throw new ResponseError(400, 'This coupon is not valid for this event');
+      }
+
+      // Calculate discount
+      const baseAmount = ticketTier.price * createRequest.quantity;
+      discountAmount = this.calculateDiscount(coupon, baseAmount);
+    }
+
+    // Calculate total amount
+    const baseAmount = ticketTier.price * createRequest.quantity;
+    const pointsUsed = createRequest.pointsUsed || 0;
+    const totalAmount = Math.max(0, baseAmount - discountAmount - pointsUsed);
+
+    // Create transaction and update seat count in atomic operation
+    const transaction = await prisma.$transaction(async (tx) => {
+      // Create transaction
+      const newTransaction = await tx.transaction.create({
+        data: {
+          userId: user.id,
+          eventId: createRequest.eventId,
+          ticketTierId: createRequest.ticketTierId,
+          quantity: createRequest.quantity,
+          totalAmount,
+          discountAmount,
+          pointsUsed,
+          status: TransactionStatus.WAITING_PAYMENT,
+          couponId: coupon?.id,
+          expiresAt: new Date(Date.now() + 2 * 60 * 60 * 1000), // 2 hours from now
+        },
+      });
+
+      // Update seat count
+      await tx.ticketTier.update({
+        where: { id: createRequest.ticketTierId },
+        data: {
+          sold: { increment: createRequest.quantity },
+        },
+      });
+
+      // Deduct points from user
+      if (pointsUsed > 0) {
+        await tx.user.update({
+          where: { id: user.id },
+          data: {
+            points: { decrement: pointsUsed },
+          },
+        });
+      }
+
+      // Increment coupon usage
+      if (coupon) {
+        await tx.coupon.update({
+          where: { id: coupon.id },
+          data: {
+            usedCount: { increment: 1 },
+          },
+        });
+      }
+
+      return newTransaction;
+    });
+
+    return toTransactionResponse(transaction);
+  }
+
+  // Helper: Calculate discount
+  private static calculateDiscount(coupon: any, baseAmount: number): number {
+    if (baseAmount < coupon.minPurchase) {
+      return 0;
+    }
+
+    let discount = 0;
+
+    if (coupon.discountType === 'PERCENTAGE') {
+      discount = (baseAmount * coupon.discountValue) / 100;
+      if (coupon.maxDiscount) {
+        discount = Math.min(discount, coupon.maxDiscount);
+      }
+    } else if (coupon.discountType === 'FIXED') {
+      discount = coupon.discountValue;
+    }
+
+    return Math.min(discount, baseAmount);
+  }
+}
