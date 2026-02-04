@@ -4,6 +4,7 @@ import { v4 as uuidv4 } from 'uuid';
 import { DiscountType } from '../src/generated/prisma/enums';
 import supertest from 'supertest';
 import { app } from '../src/application/app';
+import { logger } from '../src/application/logging';
 
 describe('Coupon Management API', () => {
   let organizerToken: string;
@@ -106,6 +107,7 @@ describe('Coupon Management API', () => {
         .set('X-API-TOKEN', organizerToken)
         .send(couponData);
 
+      logger.debug(response.body);
       expect(response.status).toBe(201);
       expect(response.body.data).toBeDefined();
       expect(response.body.data.code).toBe('DISCOUNT-20');
@@ -131,6 +133,7 @@ describe('Coupon Management API', () => {
         .set('X-API-TOKEN', customerToken)
         .send(couponData);
 
+      logger.debug(response.body);
       expect(response.status).toBe(403);
     });
 
@@ -151,6 +154,7 @@ describe('Coupon Management API', () => {
         .set('X-API-TOKEN', organizerToken)
         .send(couponData);
 
+      logger.debug(response.body);
       expect(response.status).toBe(409);
     });
 
@@ -171,6 +175,7 @@ describe('Coupon Management API', () => {
         .set('X-API-TOKEN', organizerToken)
         .send(couponData);
 
+      logger.debug(response.body);
       expect(response.status).toBe(400);
     });
   });
@@ -188,6 +193,7 @@ describe('Coupon Management API', () => {
         .set('X-API-TOKEN', customerToken)
         .send(validateData);
 
+      logger.debug(response.body);
       expect(response.status).toBe(200);
       expect(response.body.data.isValid).toBe(true);
       expect(response.body.data.discountAmount).toBeGreaterThan(0);
@@ -205,6 +211,7 @@ describe('Coupon Management API', () => {
         .set('X-API-TOKEN', customerToken)
         .send(validateData);
 
+      logger.debug(response.body);
       expect(response.status).toBe(200);
       expect(response.body.data.isValid).toBe(false);
     });
@@ -240,6 +247,7 @@ describe('Coupon Management API', () => {
         .set('X-API-TOKEN', customerToken)
         .send(validateData);
 
+      logger.debug(response.body);
       expect(response.status).toBe(200);
       expect(response.body.data.isValid).toBe(false);
 
@@ -259,6 +267,7 @@ describe('Coupon Management API', () => {
         .set('X-API-TOKEN', organizerToken)
         .send(updateData);
 
+      logger.debug(response.body);
       expect(response.status).toBe(200);
       expect(response.body.data.discountValue).toBe(25);
       expect(response.body.data.usageLimit).toBe(150);
@@ -274,6 +283,7 @@ describe('Coupon Management API', () => {
         .set('X-API-TOKEN', customerToken)
         .send(updateData);
 
+      logger.debug(response.body);
       expect(response.status).toBe(403);
     });
   });
@@ -297,6 +307,7 @@ describe('Coupon Management API', () => {
         .delete(`/api/coupons/${coupon.id}`)
         .set('X-API-TOKEN', organizerToken);
 
+      logger.debug(response.body);
       expect(response.status).toBe(200);
     });
 
@@ -305,6 +316,7 @@ describe('Coupon Management API', () => {
         .delete(`/api/coupons/${couponId}`)
         .set('X-API-TOKEN', customerToken);
 
+      logger.debug(response.body);
       expect(response.status).toBe(403);
     });
   });
@@ -313,6 +325,7 @@ describe('Coupon Management API', () => {
     it('should list active coupons', async () => {
       const response = await supertest(app).get('/api/coupons?page=1&limit=10');
 
+      logger.debug(response.body);
       expect(response.status).toBe(200);
       expect(response.body.data).toBeDefined();
       expect(response.body.pagination).toBeDefined();
@@ -323,6 +336,7 @@ describe('Coupon Management API', () => {
         `/api/coupons?eventId=${eventId}`,
       );
 
+      logger.debug(response.body);
       expect(response.status).toBe(200);
       expect(Array.isArray(response.body.data)).toBe(true);
     });

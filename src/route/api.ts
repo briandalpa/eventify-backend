@@ -4,6 +4,7 @@ import { UserController } from '../controller/user-controller';
 import { EventController } from '../controller/event-controller';
 import { ReviewController } from '../controller/review-controller';
 import { CouponController } from '../controller/coupon-controller';
+import { TransactionController } from '../controller/transaction-controller';
 
 export const apiRouter = express.Router();
 apiRouter.use(authMiddleware);
@@ -18,6 +19,21 @@ apiRouter.post('/api/events', EventController.create);
 apiRouter.patch('/api/events/:id', EventController.update);
 apiRouter.delete('/api/events/:id', EventController.delete);
 apiRouter.get('/api/organizer/events', EventController.getOrganizerEvents);
+
+// Transaction API
+apiRouter.post('/api/transactions', TransactionController.create);
+apiRouter.get('/api/transactions', TransactionController.getUserTransactions);
+apiRouter.post(
+  '/api/transactions/:id/upload-proof',
+  TransactionController.uploadProof,
+);
+apiRouter.patch('/api/transactions/:id/accept', TransactionController.accept);
+apiRouter.patch('/api/transactions/:id/reject', TransactionController.reject);
+apiRouter.patch('/api/transactions/:id/cancel', TransactionController.cancel);
+apiRouter.get(
+  '/api/organizer/transactions',
+  TransactionController.getOrganizerTransactions,
+);
 
 // Review API
 apiRouter.post('/api/reviews', ReviewController.create);
