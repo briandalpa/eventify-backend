@@ -5,6 +5,7 @@ import {
   CouponResponse,
   CreateCouponRequest,
   toCouponResponse,
+  UpdateCouponRequest,
   ValidateCouponRequest,
   ValidateCouponResponse,
 } from '../model/coupon-model';
@@ -170,6 +171,91 @@ export class CouponService {
       discountAmount,
       finalAmount,
     };
+  }
+
+  // Update coupon
+  static async updateCoupon(
+    user: User,
+    couponId: string,
+    request: UpdateCouponRequest,
+  ): Promise<CouponResponse> {
+    // Get coupon
+    const coupon = await prisma.coupon.findUnique({
+      where: { id: couponId },
+    });
+
+    if (!coupon) {
+      throw new ResponseError(404, 'Coupon not found');
+    }
+
+    // Event-specific coupons can only be updated by organizers of that event
+    if (coupon.eventId) {
+      if (user.role !== UserRole.ORGANIZER) {
+        throw new ResponseError(
+          403,
+          'Only organizers can update event-specific coupons',
+        );
+      }
+
+      const event = await prisma.event.findUnique({
+        where: { id: coupon.eventId },
+      });
+
+      if (!event || event.organizerId !== user.id) {
+        throw new ResponseError(
+          403,
+          'You can only update coupons for your own events',
+        );
+      }
+    }
+
+    // Validate request
+    const updateRequest = Validation.validate<UpdateCouponRequest>(
+      CouponValidation.UPDATE,
+      request,
+    );
+
+    // Check if new code already exists
+    if (updateRequest.code && updateRequest.code !== coupon.code) {
+      const existingCoupon = await prisma.coupon.findUnique({
+        where: { code: updateRequest.code },
+      });
+
+      if (existingCoupon) {
+        throw new ResponseError(409, 'Coupon code already exists');
+      }
+    }
+
+    // Update coupon
+    const updated = await prisma.coupon.update({
+      where: { id: couponId },
+      data: {
+        code: updateRequest.code || coupon.code,
+        discountValue:
+          updateRequest.discountValue !== undefined
+            ? updateRequest.discountValue
+            : coupon.discountValue,
+        minPurchase:
+          updateRequest.minPurchase !== undefined
+            ? updateRequest.minPurchase
+            : coupon.minPurchase,
+        maxDiscount:
+          updateRequest.maxDiscount !== undefined
+            ? updateRequest.maxDiscount
+            : coupon.maxDiscount,
+        usageLimit:
+          updateRequest.usageLimit !== undefined
+            ? updateRequest.usageLimit
+            : coupon.usageLimit,
+        validUntil: updateRequest.validUntil || coupon.validUntil,
+        isActive:
+          updateRequest.isActive !== undefined
+            ? updateRequest.isActive
+            : coupon.isActive,
+      },
+    });
+
+    return toCouponResponse(updated);
   }
 
   // Helper

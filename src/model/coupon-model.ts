@@ -13,6 +13,16 @@ export type CreateCouponRequest = {
   eventId?: string;
 };
 
+export type UpdateCouponRequest = {
+  code?: string;
+  discountValue?: number;
+  minPurchase?: number;
+  maxDiscount?: number;
+  usageLimit?: number;
+  validUntil?: Date | string;
+  isActive?: boolean;
+};
+
 export type CouponResponse = {
   id: string;
   code: string;

@@ -246,4 +246,35 @@ describe('Coupon Management API', () => {
       await prisma.event.delete({ where: { id: otherEvent.id } });
     });
   });
+
+  describe('PATCH /api/coupons/:id', () => {
+    it('should update coupon as organizer', async () => {
+      const updateData = {
+        discountValue: 25,
+        usageLimit: 150,
+      };
+
+      const response = await supertest(app)
+        .patch(`/api/coupons/${couponId}`)
+        .set('X-API-TOKEN', organizerToken)
+        .send(updateData);
+
+      expect(response.status).toBe(200);
+      expect(response.body.data.discountValue).toBe(25);
+      expect(response.body.data.usageLimit).toBe(150);
+    });
+
+    it('should reject update by non-organizer', async () => {
+      const updateData = {
+        discountValue: 50,
+      };
+
+      const response = await supertest(app)
+        .patch(`/api/coupons/${couponId}`)
+        .set('X-API-TOKEN', customerToken)
+        .send(updateData);
+
+      expect(response.status).toBe(403);
+    });
+  });
 });

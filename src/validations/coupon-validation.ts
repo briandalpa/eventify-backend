@@ -1,6 +1,7 @@
 import { z, ZodType } from 'zod';
 import {
   CreateCouponRequest,
+  UpdateCouponRequest,
   ValidateCouponRequest,
 } from '../model/coupon-model';
 import { DiscountType } from '../generated/prisma/enums';
@@ -29,6 +30,21 @@ export class CouponValidation {
       message: 'Valid until must be after valid from',
       path: ['validUntil'],
     });
+
+  static readonly UPDATE: ZodType<UpdateCouponRequest> = z.object({
+    code: z
+      .string()
+      .min(3)
+      .max(50)
+      .regex(/^[A-Z0-9-]+$/)
+      .optional(),
+    discountValue: z.number().int().min(0).optional(),
+    minPurchase: z.number().int().min(0).optional(),
+    maxDiscount: z.number().int().min(0).optional(),
+    usageLimit: z.number().int().min(1).optional(),
+    validUntil: z.coerce.date().optional(),
+    isActive: z.boolean().optional(),
+  });
 
   static readonly VALIDATE: ZodType<ValidateCouponRequest> = z.object({
     couponCode: z.string().min(1),

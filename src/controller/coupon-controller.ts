@@ -3,6 +3,7 @@ import { UserRequest } from '../types/user-request';
 import { Validation } from '../validations/validation';
 import {
   CreateCouponRequest,
+  UpdateCouponRequest,
   ValidateCouponRequest,
 } from '../model/coupon-model';
 import { CouponValidation } from '../validations/coupon-validation';
@@ -33,6 +34,23 @@ export class CouponController {
         req.body,
       );
       const response = await CouponService.validateCoupon(request);
+      res.status(200).json({
+        data: response,
+      });
+    } catch (error) {
+      next(error);
+    }
+  }
+
+  // Update coupon (PATCH /api/coupons/:id)
+  static async update(req: UserRequest, res: Response, next: NextFunction) {
+    try {
+      const { id } = req.params;
+      const request = Validation.validate<UpdateCouponRequest>(
+        CouponValidation.UPDATE,
+        req.body,
+      );
+      const response = await CouponService.updateCoupon(req.user!, id, request);
       res.status(200).json({
         data: response,
       });
