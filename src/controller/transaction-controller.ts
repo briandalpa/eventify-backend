@@ -122,4 +122,25 @@ export class TransactionController {
       next(error);
     }
   }
+
+  // Get organizer's transactions (GET /api/organizer/transactions)
+  static async getOrganizerTransactions(
+    req: UserRequest,
+    res: Response,
+    next: NextFunction,
+  ) {
+    try {
+      const filters = Validation.validate<TransactionFilterRequest>(
+        TransactionValidation.FILTER,
+        req.query,
+      );
+      const response = await TransactionService.getOrganizerTransactions(
+        req.user!,
+        filters,
+      );
+      res.status(200).json(response);
+    } catch (error) {
+      next(error);
+    }
+  }
 }

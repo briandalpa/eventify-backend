@@ -440,6 +440,73 @@ export class TransactionService {
     };
   }
 
+  // Get organizer's transactions
+  static async getOrganizerTransactions(
+    user: User,
+    filters: TransactionFilterRequest,
+  ): Promise<PaginatedTransactionResponse> {
+    if (user.role !== UserRole.ORGANIZER) {
+      throw new ResponseError(
+        403,
+        'Only organizers can view organizer transactions',
+      );
+    }
+
+    const validateFilters = Validation.validate<TransactionFilterRequest>(
+      TransactionValidation.FILTER,
+      filters,
+    );
+
+    const page = validateFilters.page || 1;
+    const limit = validateFilters.limit || 10;
+    const skip = (page - 1) * limit;
+
+    const where: any = {
+      event: {
+        organizerId: user.id,
+      },
+    };
+
+    if (validateFilters.status) {
+      where.status = validateFilters.status;
+    }
+
+    if (validateFilters.eventId) {
+      where.eventId = validateFilters.eventId;
+    }
+
+    if (validateFilters.dateFrom) {
+      where.createdAt = { gte: validateFilters.dateFrom };
+    }
+
+    if (validateFilters.dateTo) {
+      where.createdAt = {
+        ...where.createdAt,
+        lte: validateFilters.dateTo,
+      };
+    }
+
+    const [transactions, total] = await Promise.all([
+      prisma.transaction.findMany({
+        where,
+        orderBy: { createdAt: 'desc' },
+        skip,
+        take: limit,
+      }),
+      prisma.transaction.count({ where }),
+    ]);
+
+    return {
+      data: transactions.map((t) => toTransactionResponse(t)),
+      pagination: {
+        page,
+        limit,
+        total,
+        totalPages: Math.ceil(total / limit),
+      },
+    };
+  }
+
   // Helper: Calculate discount
   private static calculateDiscount(coupon: any, baseAmount: number): number {
     if (baseAmount < coupon.minPurchase) {

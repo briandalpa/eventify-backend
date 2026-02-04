@@ -4,6 +4,7 @@ import supertest from 'supertest';
 import { v4 as uuidv4 } from 'uuid';
 import { app } from '../src/application/app';
 import { TransactionStatus } from '../src/generated/prisma/enums';
+import { logger } from '../src/application/logging';
 
 describe('Transaction Management API', () => {
   let customerToken: string;
@@ -121,6 +122,7 @@ describe('Transaction Management API', () => {
         .set('X-API-TOKEN', customerToken)
         .send(transactionData);
 
+      logger.debug(response.body);
       expect(response.status).toBe(201);
       expect(response.body.data).toBeDefined();
       expect(response.body.data.quantity).toBe(2);
@@ -141,6 +143,7 @@ describe('Transaction Management API', () => {
         .set('X-API-TOKEN', customerToken)
         .send(transactionData);
 
+      logger.debug(response.body);
       expect(response.status).toBe(409);
     });
 
@@ -170,6 +173,7 @@ describe('Transaction Management API', () => {
         .set('X-API-TOKEN', poorCustomer.token!)
         .send(transactionData);
 
+      logger.debug(response.body);
       expect(response.status).toBe(400);
 
       await prisma.user.delete({
@@ -187,6 +191,7 @@ describe('Transaction Management API', () => {
           proofUrl: 'https://example.com/proof.jpg',
         });
 
+      logger.debug(response.body);
       expect(response.status).toBe(200);
       expect(response.body.data.status).toBe(
         TransactionStatus.WAITING_CONFIRMATION,
@@ -200,6 +205,7 @@ describe('Transaction Management API', () => {
         .patch(`/api/transactions/${transactionId}/accept`)
         .set('X-API-TOKEN', organizerToken);
 
+      logger.debug(response.body);
       expect(response.status).toBe(200);
       expect(response.body.data.status).toBe(TransactionStatus.DONE);
     });
@@ -221,6 +227,7 @@ describe('Transaction Management API', () => {
         .patch(`/api/transactions/${tx.id}/accept`)
         .set('X-API-TOKEN', customerToken);
 
+      logger.debug(response.body);
       expect(response.status).toBe(403);
 
       await prisma.transaction.delete({ where: { id: tx.id } });
@@ -251,6 +258,7 @@ describe('Transaction Management API', () => {
         .patch(`/api/transactions/${tx.id}/reject`)
         .set('X-API-TOKEN', organizerToken);
 
+      logger.debug(response.body);
       expect(response.status).toBe(200);
       expect(response.body.data.status).toBe(TransactionStatus.REJECTED);
     });
@@ -280,6 +288,7 @@ describe('Transaction Management API', () => {
         .patch(`/api/transactions/${tx.id}/cancel`)
         .set('X-API-TOKEN', customerToken);
 
+      logger.debug(response.body);
       expect(response.status).toBe(200);
       expect(response.body.data.status).toBe(TransactionStatus.CANCELED);
     });
@@ -291,9 +300,30 @@ describe('Transaction Management API', () => {
         .get('/api/transactions')
         .set('X-API-TOKEN', customerToken);
 
+      logger.debug(response.body);
       expect(response.status).toBe(200);
       expect(response.body.data).toBeDefined();
       expect(Array.isArray(response.body.data)).toBe(true);
+    });
+  });
+
+  describe('GET /api/organizer/transactions', () => {
+    it('should list organizer transactions', async () => {
+      const response = await supertest(app)
+        .get('/api/organizer/transactions')
+        .set('X-API-TOKEN', organizerToken);
+
+      expect(response.status).toBe(200);
+      expect(response.body.data).toBeDefined();
+    });
+
+    it('should reject for non-organizer', async () => {
+      const response = await supertest(app)
+        .get('/api/organizer/transactions')
+        .set('X-API-TOKEN', customerToken);
+
+      logger.debug(response.body);
+      expect(response.status).toBe(403);
     });
   });
 });
