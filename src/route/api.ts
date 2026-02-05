@@ -49,3 +49,4 @@ apiRouter.delete('/api/coupons/:id', CouponController.delete);
 
 // Dashboard API
 apiRouter.get('/api/dashboard/stats', DashboardController.getStats);
+apiRouter.get('/api/dashboard/revenue', DashboardController.getRevenue);

@@ -133,4 +133,43 @@ describe('Dashboard API', () => {
       expect(response.status).toBe(403);
     });
   });
+
+  describe('GET /api/dashboard/revenue', () => {
+    it('should return monthly revenue', async () => {
+      const response = await supertest(app)
+        .get('/api/dashboard/revenue?period=month')
+        .set('X-API-TOKEN', organizerToken);
+
+      expect(response.status).toBe(200);
+      expect(response.body.data).toBeDefined();
+      expect(response.body.data.periods).toBeDefined();
+      expect(Array.isArray(response.body.data.periods)).toBe(true);
+    });
+
+    it('should return daily revenue', async () => {
+      const response = await supertest(app)
+        .get('/api/dashboard/revenue?period=day')
+        .set('X-API-TOKEN', organizerToken);
+
+      expect(response.status).toBe(200);
+      expect(response.body.data.periods).toBeDefined();
+    });
+
+    it('should return yearly revenue', async () => {
+      const response = await supertest(app)
+        .get('/api/dashboard/revenue?period=year')
+        .set('X-API-TOKEN', organizerToken);
+
+      expect(response.status).toBe(200);
+      expect(response.body.data.periods).toBeDefined();
+    });
+
+    it('should reject for non-organizer', async () => {
+      const response = await supertest(app)
+        .get('/api/dashboard/revenue?period=month')
+        .set('X-API-TOKEN', customerToken);
+
+      expect(response.status).toBe(403);
+    });
+  });
 });
