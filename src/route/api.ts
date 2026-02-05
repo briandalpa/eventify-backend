@@ -5,6 +5,7 @@ import { EventController } from '../controller/event-controller';
 import { ReviewController } from '../controller/review-controller';
 import { CouponController } from '../controller/coupon-controller';
 import { TransactionController } from '../controller/transaction-controller';
+import { DashboardController } from '../controller/dashboard-controller';
 
 export const apiRouter = express.Router();
 apiRouter.use(authMiddleware);
@@ -45,3 +46,12 @@ apiRouter.post('/api/coupons', CouponController.create);
 apiRouter.post('/api/coupons/validate', CouponController.validate);
 apiRouter.patch('/api/coupons/:id', CouponController.update);
 apiRouter.delete('/api/coupons/:id', CouponController.delete);
+
+// Dashboard API
+apiRouter.get('/api/dashboard/stats', DashboardController.getStats);
+apiRouter.get('/api/dashboard/revenue', DashboardController.getRevenue);
+apiRouter.get('/api/dashboard/events', DashboardController.getEventPerformance);
+apiRouter.get(
+  '/api/dashboard/attendees/:eventId',
+  DashboardController.getAttendees,
+);
