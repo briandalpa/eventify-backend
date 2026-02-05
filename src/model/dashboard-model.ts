@@ -27,3 +27,20 @@ export type EventPerformanceResponse = {
     averageRating: number;
   }[];
 };
+
+export type AttendeeResponse = {
+  userName: string;
+  userEmail: string;
+  ticketTierName: string;
+  quantity: number;
+  totalPaid: number;
+  transactionDate: Date;
+  status: string;
+};
+
+export type AttendeeListResponse = {
+  eventId: string;
+  eventName: string;
+  attendees: AttendeeResponse[];
+  totalAttendees: number;
+};

@@ -50,4 +50,24 @@ export class DashboardController {
       next(error);
     }
   }
+
+  // Get event attendees (GET /api/dashboard/attendees/:eventId)
+  static async getAttendees(
+    req: UserRequest,
+    res: Response,
+    next: NextFunction,
+  ) {
+    try {
+      const { eventId } = req.params;
+      const response = await DashboardService.getEventAttendees(
+        req.user!,
+        eventId,
+      );
+      res.status(200).json({
+        data: response,
+      });
+    } catch (error) {
+      next(error);
+    }
+  }
 }

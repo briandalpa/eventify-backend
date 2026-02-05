@@ -51,3 +51,7 @@ apiRouter.delete('/api/coupons/:id', CouponController.delete);
 apiRouter.get('/api/dashboard/stats', DashboardController.getStats);
 apiRouter.get('/api/dashboard/revenue', DashboardController.getRevenue);
 apiRouter.get('/api/dashboard/events', DashboardController.getEventPerformance);
+apiRouter.get(
+  '/api/dashboard/attendees/:eventId',
+  DashboardController.getAttendees,
+);

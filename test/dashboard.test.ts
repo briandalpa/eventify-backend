@@ -4,6 +4,7 @@ import { prisma } from '../src/application/database';
 import { TransactionStatus } from '../src/generated/prisma/enums';
 import supertest from 'supertest';
 import { app } from '../src/application/app';
+import { logger } from '../src/application/logging';
 
 describe('Dashboard API', () => {
   let organizerToken: string;
@@ -118,6 +119,7 @@ describe('Dashboard API', () => {
         .get('/api/dashboard/stats')
         .set('X-API-TOKEN', organizerToken);
 
+      logger.debug(response.body);
       expect(response.status).toBe(200);
       expect(response.body.data).toBeDefined();
       expect(response.body.data.totalEvents).toBeGreaterThan(0);
@@ -130,6 +132,7 @@ describe('Dashboard API', () => {
         .get('/api/dashboard/stats')
         .set('X-API-TOKEN', customerToken);
 
+      logger.debug(response.body);
       expect(response.status).toBe(403);
     });
   });
@@ -140,6 +143,7 @@ describe('Dashboard API', () => {
         .get('/api/dashboard/revenue?period=month')
         .set('X-API-TOKEN', organizerToken);
 
+      logger.debug(response.body);
       expect(response.status).toBe(200);
       expect(response.body.data).toBeDefined();
       expect(response.body.data.periods).toBeDefined();
@@ -151,6 +155,7 @@ describe('Dashboard API', () => {
         .get('/api/dashboard/revenue?period=day')
         .set('X-API-TOKEN', organizerToken);
 
+      logger.debug(response.body);
       expect(response.status).toBe(200);
       expect(response.body.data.periods).toBeDefined();
     });
@@ -160,6 +165,7 @@ describe('Dashboard API', () => {
         .get('/api/dashboard/revenue?period=year')
         .set('X-API-TOKEN', organizerToken);
 
+      logger.debug(response.body);
       expect(response.status).toBe(200);
       expect(response.body.data.periods).toBeDefined();
     });
@@ -169,6 +175,7 @@ describe('Dashboard API', () => {
         .get('/api/dashboard/revenue?period=month')
         .set('X-API-TOKEN', customerToken);
 
+      logger.debug(response.body);
       expect(response.status).toBe(403);
     });
   });
@@ -179,6 +186,7 @@ describe('Dashboard API', () => {
         .get('/api/dashboard/events')
         .set('X-API-TOKEN', organizerToken);
 
+      logger.debug(response.body);
       expect(response.status).toBe(200);
       expect(response.body.data).toBeDefined();
       expect(response.body.data.events).toBeDefined();
@@ -190,9 +198,12 @@ describe('Dashboard API', () => {
         .get('/api/dashboard/events')
         .set('X-API-TOKEN', organizerToken);
 
+      logger.debug(response.body);
       expect(response.status).toBe(200);
       if (response.body.data.events.length > 0) {
         const event = response.body.data.events[0];
+
+        logger.debug(response.body);
         expect(event.eventId).toBeDefined();
         expect(event.totalRevenue).toBeDefined();
         expect(event.attendanceRate).toBeDefined();
@@ -205,7 +216,89 @@ describe('Dashboard API', () => {
         .get('/api/dashboard/events')
         .set('X-API-TOKEN', customerToken);
 
+      logger.debug(response.body);
       expect(response.status).toBe(403);
+    });
+  });
+
+  describe('GET /api/dashboard/attendees/:eventId', () => {
+    it('should return event attendee list', async () => {
+      const response = await supertest(app)
+        .get(`/api/dashboard/attendees/${eventId}`)
+        .set('X-API-TOKEN', organizerToken);
+
+      logger.debug(response.body);
+      expect(response.status).toBe(200);
+      expect(response.body.data).toBeDefined();
+      expect(response.body.data.eventId).toBe(eventId);
+      expect(response.body.data.attendees).toBeDefined();
+      expect(Array.isArray(response.body.data.attendees)).toBe(true);
+      expect(response.body.data.totalAttendees).toBeGreaterThan(0);
+    });
+
+    it('should include attendee details', async () => {
+      const response = await supertest(app)
+        .get(`/api/dashboard/attendees/${eventId}`)
+        .set('X-API-TOKEN', organizerToken);
+
+      logger.debug(response.body);
+      expect(response.status).toBe(200);
+      if (response.body.data.attendees.length > 0) {
+        const attendee = response.body.data.attendees[0];
+
+        logger.debug(response.body);
+        expect(attendee.userName).toBeDefined();
+        expect(attendee.userEmail).toBeDefined();
+        expect(attendee.ticketTierName).toBeDefined();
+        expect(attendee.quantity).toBeDefined();
+        expect(attendee.totalPaid).toBeDefined();
+        expect(attendee.transactionDate).toBeDefined();
+      }
+    });
+
+    it('should reject access for non-organizer', async () => {
+      const response = await supertest(app)
+        .get(`/api/dashboard/attendees/${eventId}`)
+        .set('X-API-TOKEN', customerToken);
+
+      logger.debug(response.body);
+      expect(response.status).toBe(403);
+    });
+
+    it('should reject access for other organizer', async () => {
+      // Create another organizer
+      const otherOrganizer = await prisma.user.create({
+        data: {
+          name: 'Other Organizer',
+          email: 'other-dashboard@test.com',
+          password: await bcrypt.hash('password123', 10),
+          role: 'ORGANIZER',
+          referralCode: `REF-${uuidv4()}`,
+          token: 'other-dashboard-token',
+        },
+      });
+
+      const response = await supertest(app)
+        .get(`/api/dashboard/attendees/${eventId}`)
+        .set('X-API-TOKEN', otherOrganizer.token!);
+
+      logger.debug(response.body);
+      expect(response.status).toBe(403);
+
+      await prisma.user.delete({
+        where: { email: 'other-dashboard@test.com' },
+      });
+    });
+
+    it('should handle non-existent event', async () => {
+      const fakeId = 'nonexistent-id';
+
+      const response = await supertest(app)
+        .get(`/api/dashboard/attendees/${fakeId}`)
+        .set('X-API-TOKEN', organizerToken);
+
+      logger.debug(response.body);
+      expect(response.status).toBe(404);
     });
   });
 });

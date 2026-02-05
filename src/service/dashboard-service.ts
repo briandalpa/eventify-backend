@@ -7,6 +7,7 @@ import {
   UserRole,
 } from '../generated/prisma/enums';
 import {
+  AttendeeListResponse,
   DashboardStatsResponse,
   EventPerformanceResponse,
   RevenueByPeriodResponse,
@@ -236,6 +237,62 @@ export class DashboardService {
 
     return {
       events: eventPerformance.sort((a, b) => b.totalRevenue - a.totalRevenue),
+    };
+  }
+
+  // Get event attendees
+  static async getEventAttendees(
+    user: User,
+    eventId: string,
+  ): Promise<AttendeeListResponse> {
+    if (user.role !== UserRole.ORGANIZER) {
+      throw new ResponseError(403, 'Only organizers can view attendees');
+    }
+
+    // Get event and verify ownership
+    const event = await prisma.event.findUnique({
+      where: { id: eventId },
+    });
+
+    if (!event) {
+      throw new ResponseError(404, 'Event not found');
+    }
+
+    if (event.organizerId !== user.id) {
+      throw new ResponseError(
+        403,
+        'You can only view attendees for your own events',
+      );
+    }
+
+    // Get all DONE transactions for this event
+    const transactions = await prisma.transaction.findMany({
+      where: {
+        eventId,
+        status: TransactionStatus.DONE,
+      },
+      include: {
+        user: { select: { name: true, email: true } },
+        ticketTier: { select: { name: true } },
+      },
+      orderBy: { createdAt: 'desc' },
+    });
+
+    const attendees = transactions.map((t) => ({
+      userName: t.user.name,
+      userEmail: t.user.email,
+      ticketTierName: t.ticketTier.name,
+      quantity: t.quantity,
+      totalPaid: t.totalAmount,
+      transactionDate: t.createdAt,
+      status: t.status,
+    }));
+
+    return {
+      eventId,
+      eventName: event.title,
+      attendees,
+      totalAttendees: transactions.reduce((sum, t) => sum + t.quantity, 0),
     };
   }
 }
