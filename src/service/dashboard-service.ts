@@ -8,6 +8,7 @@ import {
 } from '../generated/prisma/enums';
 import {
   DashboardStatsResponse,
+  EventPerformanceResponse,
   RevenueByPeriodResponse,
 } from '../model/dashboard-model';
 
@@ -179,6 +180,62 @@ export class DashboardService {
 
     return {
       periods: periods.sort((a, b) => a.period.localeCompare(b.period)),
+    };
+  }
+
+  // Get event performance metrics
+  static async getEventPerformance(
+    user: User,
+  ): Promise<EventPerformanceResponse> {
+    if (user.role !== UserRole.ORGANIZER) {
+      throw new ResponseError(
+        403,
+        'Only organizers can view dashboard statistics',
+      );
+    }
+
+    // Get all organizer's events with their ticket tiers and transactions
+    const events = await prisma.event.findMany({
+      where: { organizerId: user.id },
+      include: {
+        ticketTiers: {
+          select: { id: true, quantity: true },
+        },
+        transactions: {
+          where: { status: TransactionStatus.DONE },
+          select: { totalAmount: true, quantity: true },
+        },
+      },
+    });
+
+    const eventPerformance = events.map((event) => {
+      const capacity = event.ticketTiers.reduce(
+        (sum, tier) => sum + tier.quantity,
+        0,
+      );
+      const ticketsSold = event.transactions.reduce(
+        (sum, t) => sum + t.quantity,
+        0,
+      );
+      const totalRevenue = event.transactions.reduce(
+        (sum, t) => sum + t.totalAmount,
+        0,
+      );
+      const attendanceRate = capacity > 0 ? (ticketsSold / capacity) * 100 : 0;
+
+      return {
+        eventId: event.id,
+        eventName: event.title,
+        totalRevenue,
+        ticketsSold,
+        capacity,
+        attendanceRate: Math.round(attendanceRate * 100) / 100,
+        averageRating: event.averageRating,
+      };
+    });
+
+    return {
+      events: eventPerformance.sort((a, b) => b.totalRevenue - a.totalRevenue),
     };
   }
 }

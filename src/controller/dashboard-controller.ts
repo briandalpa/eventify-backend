@@ -34,4 +34,20 @@ export class DashboardController {
       next(error);
     }
   }
+
+  // Get event performance (GET /api/dashboard/events)
+  static async getEventPerformance(
+    req: UserRequest,
+    res: Response,
+    next: NextFunction,
+  ) {
+    try {
+      const response = await DashboardService.getEventPerformance(req.user!);
+      res.status(200).json({
+        data: response,
+      });
+    } catch (error) {
+      next(error);
+    }
+  }
 }

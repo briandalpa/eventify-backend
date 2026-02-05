@@ -15,3 +15,15 @@ export type RevenueByPeriodResponse = {
     transactionCount: number;
   }[];
 };
+
+export type EventPerformanceResponse = {
+  events: {
+    eventId: string;
+    eventName: string;
+    totalRevenue: number;
+    ticketsSold: number;
+    capacity: number;
+    attendanceRate: number;
+    averageRating: number;
+  }[];
+};

@@ -172,4 +172,40 @@ describe('Dashboard API', () => {
       expect(response.status).toBe(403);
     });
   });
+
+  describe('GET /api/dashboard/events', () => {
+    it('should return event performance metrics', async () => {
+      const response = await supertest(app)
+        .get('/api/dashboard/events')
+        .set('X-API-TOKEN', organizerToken);
+
+      expect(response.status).toBe(200);
+      expect(response.body.data).toBeDefined();
+      expect(response.body.data.events).toBeDefined();
+      expect(Array.isArray(response.body.data.events)).toBe(true);
+    });
+
+    it('should include attendance rate and ratings', async () => {
+      const response = await supertest(app)
+        .get('/api/dashboard/events')
+        .set('X-API-TOKEN', organizerToken);
+
+      expect(response.status).toBe(200);
+      if (response.body.data.events.length > 0) {
+        const event = response.body.data.events[0];
+        expect(event.eventId).toBeDefined();
+        expect(event.totalRevenue).toBeDefined();
+        expect(event.attendanceRate).toBeDefined();
+        expect(event.averageRating).toBeDefined();
+      }
+    });
+
+    it('should reject for non-organizer', async () => {
+      const response = await supertest(app)
+        .get('/api/dashboard/events')
+        .set('X-API-TOKEN', customerToken);
+
+      expect(response.status).toBe(403);
+    });
+  });
 });
