@@ -11,6 +11,7 @@ export const publicRouter = express.Router();
 // User API (Public)
 publicRouter.post('/api/users', UserController.register);
 publicRouter.post('/api/users/login', UserController.login);
+publicRouter.post('/api/users/forgot-password', UserController.forgotPassword);
 
 // Event API (Public)
 publicRouter.get('/api/events', EventController.list);

@@ -2,10 +2,13 @@ import { configDotenv } from 'dotenv';
 import { app } from './application/app';
 import { logger } from './application/logging';
 import { startBackgroundJobs, stopBackgroundJobs } from './jobs';
+import { EmailService } from './service/email-service';
 
 configDotenv();
 
 const PORT = process.env.PORT;
+
+EmailService.initialize();
 
 const server = app.listen(PORT, () => {
   logger.info(`Listening on Port: ${PORT}`);

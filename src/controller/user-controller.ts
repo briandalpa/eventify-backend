@@ -70,4 +70,26 @@ export class UserController {
       next(error);
     }
   }
+
+  // Forgot password
+  static async forgotPassword(
+    req: Request,
+    res: Response,
+    next: NextFunction,
+  ) {
+    try {
+      const { email } = req.body;
+      if (!email) {
+        return res.status(400).json({
+          error: 'Email is required',
+        });
+      }
+      await UserService.forgotPassword(email);
+      res.status(200).json({
+        data: 'Password reset email sent',
+      });
+    } catch (error) {
+      next(error);
+    }
+  }
 }
