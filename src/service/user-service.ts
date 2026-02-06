@@ -14,6 +14,8 @@ import {
   LoginUserRequest,
   UpdateUserRequest,
 } from '../model/user-model';
+import { EmailService } from './email-service';
+import { logger } from '../application/logging';
 import bcrypt from 'bcrypt';
 import { prisma } from '../application/database';
 import { v4 as uuidv4 } from 'uuid';
@@ -167,5 +169,58 @@ export class UserService {
     });
 
     return toUserResponse(result);
+  }
+
+  // Forgot password
+  static async forgotPassword(email: string): Promise<void> {
+    // Check if user exists
+    const user = await prisma.user.findUnique({
+      where: {
+        email,
+      },
+    });
+
+    if (!user) {
+      throw new ResponseError(404, 'User not found');
+    }
+
+    // Generate reset token
+    const resetToken = uuidv4();
+
+    // Set expiry to 1 hour from now
+    const resetTokenExpiry = new Date();
+    resetTokenExpiry.setHours(resetTokenExpiry.getHours() + 1);
+
+    try {
+      // Update user with reset token and expiry
+      await prisma.user.update({
+        where: {
+          email,
+        },
+        data: {
+          resetToken,
+          resetTokenExpiry,
+        },
+      });
+
+      // Construct reset URL
+      const resetUrl = `${process.env.FRONTEND_URL}/reset-password?token=${resetToken}`;
+
+      // Send password reset email
+      try {
+        await EmailService.sendPasswordResetEmail(email, resetToken, resetUrl);
+        logger.info(`Password reset email sent to ${email}`);
+      } catch (emailError) {
+        logger.error(
+          `Failed to send password reset email to ${email}:`,
+          emailError,
+        );
+      }
+
+      logger.info(`Forgot password request processed for ${email}`);
+    } catch (error) {
+      logger.error('Failed to process forgot password request:', error);
+      throw error;
+    }
   }
 }

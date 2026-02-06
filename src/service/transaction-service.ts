@@ -12,6 +12,7 @@ import {
 import { isPendingTransaction } from '../utils/transaction';
 import { TransactionValidation } from '../validations/transaction-validation';
 import { Validation } from '../validations/validation';
+import { EmailService } from './email-service';
 
 export class TransactionService {
   // Create transaction
@@ -184,7 +185,7 @@ export class TransactionService {
       where: { id: transactionId },
       data: {
         status: TransactionStatus.WAITING_CONFIRMATION,
-        // Note: In a real app, you'd store the proofUrl somewhere
+        // Store the proofUrl later
       },
     });
 
@@ -202,7 +203,7 @@ export class TransactionService {
 
     const transaction = await prisma.transaction.findUnique({
       where: { id: transactionId },
-      include: { event: true },
+      include: { event: true, user: true },
     });
 
     if (!transaction) {
@@ -232,7 +233,20 @@ export class TransactionService {
       },
     });
 
-    // TODO: Send email notification to user
+    // Send email notification to user
+    try {
+      await EmailService.sendTransactionAcceptedEmail(
+        transaction.user.email,
+        transaction.event.title,
+        transaction.id,
+        transaction.user.name,
+        transaction.quantity,
+        transaction.totalAmount,
+      );
+    } catch (error) {
+      // Log error but don't fail the transaction acceptance
+      console.error('Failed to send transaction accepted email:', error);
+    }
 
     return toTransactionResponse(updated);
   }
@@ -248,7 +262,7 @@ export class TransactionService {
 
     const transaction = await prisma.transaction.findUnique({
       where: { id: transactionId },
-      include: { event: true },
+      include: { event: true, user: true },
     });
 
     if (!transaction) {
@@ -308,7 +322,22 @@ export class TransactionService {
       return result;
     });
 
-    // TODO: Send email notification to user
+    // Send email notification to user
+    try {
+      await EmailService.sendTransactionRejectedEmail(
+        transaction.user.email,
+        transaction.event.title,
+        transaction.id,
+        undefined,
+        transaction.user.name,
+        transaction.quantity,
+        transaction.pointsUsed,
+        !!transaction.couponId,
+      );
+    } catch (error) {
+      // Log error but don't fail the transaction rejection
+      console.error('Failed to send transaction rejected email:', error);
+    }
 
     return toTransactionResponse(updated);
   }
