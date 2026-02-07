@@ -239,7 +239,7 @@ export class TransactionService {
         transaction.user.email,
         transaction.event.title,
         transaction.id,
-        transaction.user.name,
+        transaction.user.name ?? undefined,
         transaction.quantity,
         transaction.totalAmount,
       );
@@ -329,7 +329,7 @@ export class TransactionService {
         transaction.event.title,
         transaction.id,
         undefined,
-        transaction.user.name,
+        transaction.user.name ?? undefined,
         transaction.quantity,
         transaction.pointsUsed,
         !!transaction.couponId,

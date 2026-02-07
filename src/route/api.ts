@@ -1,14 +1,14 @@
 import express from 'express';
-import { authMiddleware } from '../middleware/auth-middleware';
 import { UserController } from '../controller/user-controller';
 import { EventController } from '../controller/event-controller';
 import { ReviewController } from '../controller/review-controller';
 import { CouponController } from '../controller/coupon-controller';
 import { TransactionController } from '../controller/transaction-controller';
 import { DashboardController } from '../controller/dashboard-controller';
+import { requireAuth } from '../middleware/auth-middleware';
 
 export const apiRouter = express.Router();
-apiRouter.use(authMiddleware);
+apiRouter.use(requireAuth);
 
 // User API
 apiRouter.get('/api/users/current', UserController.get);
