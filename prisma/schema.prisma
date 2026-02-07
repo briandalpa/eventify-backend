@@ -80,40 +80,37 @@ model Location {
 // USER MODEL
 
 model User {
-  id               String        @id @default(uuid())
-  name             String
-  email            String        @unique
-  password         String
-  token            String?       @unique
-  resetToken       String?       @unique @map("reset_token")
-  resetTokenExpiry DateTime?     @map("reset_token_expiry")
-  role             UserRole      @default(CUSTOMER)
-  avatarUrl        String?       @map("avatar_url")
-  phone            String?
-  bio              String?
-  referralCode     String        @unique @map("referral_code")
-  referredBy       String?       @map("referred_by")
-  points           Int           @default(0)
-  createdAt        DateTime      @default(now()) @map("created_at")
-  updatedAt        DateTime      @updatedAt @map("updated_at")
-  // Relations
-  transactions     Transaction[]
-  reviews          Review[]
-  userPoints       UserPoint[]
-  referrer         User?         @relation("Referrals", fields: [referredBy], references: [referralCode])
-  referrals        User[]        @relation("Referrals")
-  coupons          Coupon[]
-  // Organizer reference (if user is an organizer, they'll have events)
-  events           Event[]
+  id           String   @id @default(uuid())
+  name         String?
+  email        String   @unique
+  emailVerified Boolean @default(false)
+  image        String?
 
-  emailVerified Boolean   @default(false)
-  image         String?
-  sessions      Session[]
-  accounts      Account[]
+  role         UserRole @default(CUSTOMER)
+  avatarUrl    String?  @map("avatar_url")
+  phone        String?
+  bio          String?
+
+  referralCode String?  @unique @map("referral_code")
+  referredBy   String?  @map("referred_by")
+  points       Int      @default(0)
+
+  createdAt    DateTime @default(now()) @map("created_at")
+  updatedAt    DateTime @updatedAt @map("updated_at")
+
+  // Relations
+  transactions Transaction[]
+  reviews      Review[]
+  userPoints   UserPoint[]
+  referrer     User?  @relation("Referrals", fields: [referredBy], references: [referralCode])
+  referrals    User[] @relation("Referrals")
+  coupons      Coupon[]
+  events       Event[]
+
+  sessions Session[]
+  accounts Account[]
 
   @@index([referredBy])
-  @@index([email])
-  @@index([referralCode])
   @@index([role])
   @@map("users")
 }

@@ -8,11 +8,21 @@ export const auth = betterAuth({
   }),
   emailAndPassword: {
     enabled: true,
+    requireEmailVerification: false,
+  },
+  user: {
+    additionalFields: {
+      role: {
+        type: 'string',
+        required: true,
+        input: true,
+      },
+    },
   },
   session: {
     cookieCache: {
       enabled: true,
-      maxAge: 1000 * 60 * 60 * 24 * 7, // 7 days
+      maxAge: 60 * 60 * 24 * 7, // 7 days
     },
   },
   trustedOrigins: ['http://localhost:5173'],

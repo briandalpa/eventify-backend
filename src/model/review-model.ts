@@ -8,13 +8,15 @@ export type CreateReviewRequest = {
 
 export type ReviewResponse = {
   id: string;
-  userId: string;
-  eventId: string;
-  transactionId: string;
   rating: number;
-  comment?: string;
+  comment: string | null;
   createdAt: Date;
-  userName?: string;
+  eventId: string;
+  userId: string;
+  transactionId: string;
+  user?: {
+    name: string | null;
+  };
 };
 
 export type EventReviewsResponse = {
@@ -30,7 +32,7 @@ export type EventReviewsResponse = {
 };
 
 export function toReviewResponse(
-  review: Review & { user?: { name: string } },
+  review: Review & { user?: { name: string | null } },
 ): ReviewResponse {
   return {
     id: review.id,
@@ -38,8 +40,8 @@ export function toReviewResponse(
     eventId: review.eventId,
     transactionId: review.transactionId,
     rating: review.rating,
-    comment: review.comment || undefined,
+    comment: review.comment,
     createdAt: review.createdAt,
-    userName: review.user?.name,
+    user: review.user ? { name: review.user.name } : undefined,
   };
 }

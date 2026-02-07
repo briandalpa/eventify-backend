@@ -22,4 +22,5 @@ app.use(express.json());
 
 app.use(publicRouter);
 app.use(apiRouter);
+
 app.use(errorMiddleware);

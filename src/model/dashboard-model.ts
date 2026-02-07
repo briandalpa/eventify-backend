@@ -1,3 +1,5 @@
+import { TransactionStatus } from '../generated/prisma/enums';
+
 export type DashboardStatsResponse = {
   totalEvents: number;
   totalRevenue: number;
@@ -28,15 +30,15 @@ export type EventPerformanceResponse = {
   }[];
 };
 
-export type AttendeeResponse = {
-  userName: string;
+export interface AttendeeResponse {
+  userName: string | null;
   userEmail: string;
   ticketTierName: string;
   quantity: number;
   totalPaid: number;
   transactionDate: Date;
-  status: string;
-};
+  status: TransactionStatus;
+}
 
 export type AttendeeListResponse = {
   eventId: string;
