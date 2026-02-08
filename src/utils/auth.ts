@@ -22,6 +22,11 @@ export const auth = betterAuth({
         required: true,
         input: true,
       },
+      avatarUrl: {
+        type: 'string',
+        required: false,
+        input: false,
+      },
     },
   },
 
@@ -32,7 +37,10 @@ export const auth = betterAuth({
     },
 
     user: {
-      additionalFields: ['role'],
+      additionalFields: {
+        role: true,
+        avatarUrl: true,
+      },
     },
   },
 
