@@ -16,6 +16,7 @@ app.use(
     credentials: true, // Allow credentials (cookies, authorization headers, etc.)
   }),
 );
+
 app.all('/api/auth/*splat', toNodeHandler(auth));
 
 app.use(express.json());
