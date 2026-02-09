@@ -27,6 +27,16 @@ export const auth = betterAuth({
         required: false,
         input: false,
       },
+      referralCode: {
+        type: 'string',
+        required: false,
+        input: false,
+      },
+      referredBy: {
+        type: 'string',
+        required: false,
+        input: true,
+      },
     },
   },
 
@@ -34,13 +44,6 @@ export const auth = betterAuth({
     cookieCache: {
       enabled: true,
       maxAge: 60 * 60 * 24 * 7,
-    },
-
-    user: {
-      additionalFields: {
-        role: true,
-        avatarUrl: true,
-      },
     },
   },
 

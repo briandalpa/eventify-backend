@@ -45,6 +45,7 @@ function requireAuth(req: Request, res: Response, next: NextFunction): void {
           name: true,
           role: true,
           emailVerified: true,
+          avatarUrl: true,
         },
       });
 
