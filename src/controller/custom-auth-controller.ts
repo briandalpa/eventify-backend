@@ -100,10 +100,20 @@ router.post('/api/auth/register', async (req: Request, res: Response) => {
         token: signUpResponse.token,
       },
     });
-  } catch (error) {
+  } catch (error: any) {
     logger.error('Registration error:', error);
+
+    // Handle Better Auth specific errors
+    if (error.body && error.body.code) {
+      return res.status(error.statusCode || 400).json({
+        error: error.body.message || error.message || 'Registration failed',
+        code: error.body.code,
+      });
+    }
+
+    // Handle generic errors
     return res.status(500).json({
-      error: 'Internal server error during registration',
+      error: error.message || 'Internal server error during registration',
     });
   }
 });
