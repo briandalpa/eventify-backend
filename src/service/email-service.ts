@@ -5,16 +5,18 @@ import { EmailOptions } from '../model/email-model';
 export class EmailService {
   private static transporter: Transporter;
   // Initialize email transporter (call once on app startup)
-  static initialize(): void {
+  static async initialize(): Promise<void> {
     this.transporter = nodemailer.createTransport({
       host: 'smtp.ethereal.email',
       port: 587,
+      secure: false,
       auth: {
         user: process.env.EMAIL_USER,
         pass: process.env.EMAIL_PASS,
       },
     });
 
+    await this.transporter.verify();
     logger.info('Email service initialized with Ethereal SMTP');
   }
 
@@ -239,7 +241,10 @@ export class EmailService {
         logger.info(`👀 Preview email: ${previewUrl}`);
       }
     } catch (error) {
-      logger.error(`Failed to send email to ${options.to}: ${error}`);
+      logger.error('Failed to send email', {
+        to: options.to,
+        error: error instanceof Error ? error.message : error,
+      });
       throw error;
     }
   }
@@ -272,7 +277,7 @@ export class EmailService {
         `[EMAIL] Transaction accepted email sent to ${recipientEmail}`,
       );
     } catch (error) {
-      logger.error(`Failed to send transaction accepted email: ${error}`);
+      logger.error('Transaction accepted email failed', error);
     }
   }
 
@@ -308,7 +313,7 @@ export class EmailService {
         `[EMAIL] Transaction rejected email sent to ${recipientEmail}`,
       );
     } catch (error) {
-      logger.error(`Failed to send transaction rejected email: ${error}`);
+      logger.error('Transaction rejected email failed', error);
     }
   }
 
@@ -332,7 +337,7 @@ export class EmailService {
       await this.sendEmail(email);
       logger.info(`[EMAIL] Referral reward email sent to ${recipientEmail}`);
     } catch (error) {
-      logger.error(`Failed to send referral reward email: ${error}`);
+      logger.error('Referral reward email failed', error);
     }
   }
 
@@ -356,7 +361,7 @@ export class EmailService {
       await this.sendEmail(email);
       logger.info(`[EMAIL] Password reset email sent to ${recipientEmail}`);
     } catch (error) {
-      logger.error(`Failed to send password reset email: ${error}`);
+      logger.error('Password reset email failed', error);
     }
   }
 }

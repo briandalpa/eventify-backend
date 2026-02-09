@@ -8,29 +8,25 @@ configDotenv();
 
 const PORT = process.env.PORT;
 
-EmailService.initialize();
+(async () => {
+  try {
+    await EmailService.initialize();
 
-const server = app.listen(PORT, () => {
-  logger.info(`Listening on Port: ${PORT}`);
-  startBackgroundJobs();
-});
+    const server = app.listen(PORT, () => {
+      logger.info(`Listening on Port: ${PORT}`);
+      startBackgroundJobs();
+    });
 
-process.on('SIGTERM', () => {
-  logger.info('SIGTERM received, shutting down gracefully...');
-  stopBackgroundJobs();
+    const shutdown = () => {
+      logger.info('Shutting down...');
+      stopBackgroundJobs();
+      server.close(() => process.exit(0));
+    };
 
-  server.close(() => {
-    logger.info('Server closed');
-    process.exit(0);
-  });
-});
-
-process.on('SIGINT', () => {
-  logger.info('SIGINT received, shutting down gracefully...');
-  stopBackgroundJobs();
-
-  server.close(() => {
-    logger.info('Server closed');
-    process.exit(0);
-  });
-});
+    process.on('SIGTERM', shutdown);
+    process.on('SIGINT', shutdown);
+  } catch (error) {
+    logger.error('❌ Failed to start server', error);
+    process.exit(1);
+  }
+})();
