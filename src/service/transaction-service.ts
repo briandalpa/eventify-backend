@@ -185,7 +185,7 @@ export class TransactionService {
       where: { id: transactionId },
       data: {
         status: TransactionStatus.WAITING_CONFIRMATION,
-        // Store the proofUrl later
+        paymentProofUrl: validateRequest.proofUrl,
       },
     });
 

@@ -31,6 +31,7 @@ export type TransactionResponse = {
   discountAmount: number;
   pointsUsed: number;
   status: TransactionStatus;
+  paymentProofUrl?: string;
   couponId?: string;
   createdAt: Date;
   expiresAt?: Date;
